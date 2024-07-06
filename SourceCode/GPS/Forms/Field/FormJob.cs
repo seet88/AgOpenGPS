@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
@@ -261,6 +262,27 @@ namespace AgOpenGPS
         private void btnDeleteAB_Click(object sender, EventArgs e)
         {
             mf.isCancelJobMenu = true;
+        }
+
+        private void btnFieldManager_Click(object sender, EventArgs e)
+        {
+            Debug.WriteLine("hello Field Manager");
+            Process.Start("http://localhost:5000/");
+            //string pathToScript = "C:\\Users\\irold\\Desktop\\FM\\startClient.py";
+
+            //ProcessStartInfo start = new ProcessStartInfo();
+            //start.FileName = "C:\\Users\\irold\\AppData\\Local\\Programs\\Python\\Python312\\python.exe";
+            //start.Arguments = string.Format("{0}", pathToScript);
+            //start.UseShellExecute = false;
+            //start.RedirectStandardOutput = true;
+            //using (Process process = Process.Start(start))
+            //{
+            //    using (StreamReader reader = process.StandardOutput)
+            //    {
+            //        string result = reader.ReadToEnd();
+            //        Console.Write(result);
+            //    }
+            //}
         }
     }
 }

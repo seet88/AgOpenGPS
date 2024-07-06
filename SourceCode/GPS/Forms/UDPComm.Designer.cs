@@ -19,6 +19,7 @@ namespace AgOpenGPS
 
         // Data stream
         private byte[] loopBuffer = new byte[1024];
+        private byte[] loopBufferCustom = new byte[1024];
 
         // Status delegate
         public int udpWatchCounts = 0;
@@ -274,6 +275,14 @@ namespace AgOpenGPS
             }
         }
 
+        private void ReceiveCustomData(byte[] data) {
+            Debug.WriteLine("receive some data");
+            Debug.WriteLine(data.ToString());
+            var str = System.Text.Encoding.Default.GetString(data);
+            Debug.WriteLine(str);
+
+        }
+
         //start the UDP server
         public void StartLoopbackServer()
         {
@@ -291,6 +300,26 @@ namespace AgOpenGPS
                 MessageBox.Show("Load Error: " + ex.Message, "UDP Server", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        public void StartLoopbackServerCustom()
+        {
+            int port = 8895;
+            try
+            {
+                // Initialise the socket
+                loopBackSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                loopBackSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
+                loopBackSocket.Bind(new IPEndPoint(IPAddress.Loopback, port));
+                loopBackSocket.BeginReceiveFrom(loopBufferCustom, 0, loopBufferCustom.Length, SocketFlags.None,
+                    ref endPointLoopBack, new AsyncCallback(ReceiveAppDataCustom), null);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Load Error: " + ex.Message, "UDP Server", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+
 
         private void DisableSim()
         {
@@ -321,6 +350,28 @@ namespace AgOpenGPS
                     ref endPointLoopBack, new AsyncCallback(ReceiveAppData), null);
 
                 BeginInvoke((MethodInvoker)(() => ReceiveFromAgIO(localMsg)));
+            }
+            catch (Exception)
+            {
+                // MessageBox.Show("ReceiveData Error: " + ex.Message, "UDP Server", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void ReceiveAppDataCustom(IAsyncResult asyncResult)
+        {
+            try
+            {
+                // Receive all data
+                int msgLen = loopBackSocket.EndReceiveFrom(asyncResult, ref endPointLoopBack);
+
+                byte[] localMsg = new byte[msgLen];
+                Array.Copy(loopBufferCustom, localMsg, msgLen);
+
+                // Listen for more connections again...
+                loopBackSocket.BeginReceiveFrom(loopBufferCustom, 0, loopBufferCustom.Length, SocketFlags.None,
+                    ref endPointLoopBack, new AsyncCallback(ReceiveAppDataCustom), null);
+
+                BeginInvoke((MethodInvoker)(() => ReceiveCustomData(localMsg)));
             }
             catch (Exception)
             {

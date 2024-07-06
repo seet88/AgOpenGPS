@@ -355,6 +355,7 @@ namespace AgOpenGPS
 
             //start udp server is required
             StartLoopbackServer();
+            StartLoopbackServerCustom();
 
             //boundaryToolStripBtn.Enabled = false;
             FieldMenuButtonEnableDisable(false);

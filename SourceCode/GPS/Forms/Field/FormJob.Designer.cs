@@ -43,6 +43,7 @@
             this.btnJobNew = new System.Windows.Forms.Button();
             this.lblResumeField = new System.Windows.Forms.Label();
             this.btnDeleteAB = new System.Windows.Forms.Button();
+            this.btnFieldManager = new System.Windows.Forms.Button();
             this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -68,9 +69,11 @@
             this.tableLayoutPanel1.Controls.Add(this.btnJobResume, 2, 3);
             this.tableLayoutPanel1.Controls.Add(this.btnFromExisting, 0, 2);
             this.tableLayoutPanel1.Controls.Add(this.btnJobNew, 0, 3);
+            this.tableLayoutPanel1.Controls.Add(this.btnFieldManager, 3, 3);
             this.tableLayoutPanel1.Location = new System.Drawing.Point(9, 7);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 4;
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
@@ -361,6 +364,29 @@
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel1.PerformLayout();
             this.ResumeLayout(false);
+            //
+            // btnFieldManager
+            // 
+            this.btnFieldManager.BackColor = System.Drawing.Color.Transparent;
+            this.btnFieldManager.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnFieldManager.FlatAppearance.BorderColor = System.Drawing.Color.Black;
+            this.btnFieldManager.FlatAppearance.BorderSize = 0;
+            this.btnFieldManager.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnFieldManager.Font = new System.Drawing.Font("Tahoma", 18F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnFieldManager.ForeColor = System.Drawing.SystemColors.ActiveCaptionText;
+            this.btnFieldManager.Image = global::AgOpenGPS.Properties.Resources.FilePrevious;
+            this.btnFieldManager.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.btnFieldManager.Location = new System.Drawing.Point(6, 429);
+            this.btnFieldManager.Margin = new System.Windows.Forms.Padding(6, 5, 6, 5);
+            this.btnFieldManager.Name = "btnFieldManager";
+            this.btnFieldManager.Padding = new System.Windows.Forms.Padding(12, 0, 0, 0);
+            this.btnFieldManager.Size = new System.Drawing.Size(351, 96);
+            this.btnFieldManager.TabIndex = 1;
+            this.btnFieldManager.Text = "Field manager";
+            this.btnFieldManager.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.btnFieldManager.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.btnFieldManager.UseVisualStyleBackColor = false;
+            this.btnFieldManager.Click += new System.EventHandler(this.btnFieldManager_Click);
 
         }
 
@@ -377,6 +403,7 @@
         private System.Windows.Forms.Button btnFromKML;
         private System.Windows.Forms.Button btnFromISOXML;
         private System.Windows.Forms.Button btnDeleteAB;
+        private System.Windows.Forms.Button btnFieldManager;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Label label3;
