@@ -2557,6 +2557,7 @@
             0,
             0,
             0});
+            this.nudMinSteerSpeed.Minimum = -10;
             this.nudMinSteerSpeed.Name = "nudMinSteerSpeed";
             this.nudMinSteerSpeed.ReadOnly = true;
             this.nudMinSteerSpeed.Size = new System.Drawing.Size(110, 52);
