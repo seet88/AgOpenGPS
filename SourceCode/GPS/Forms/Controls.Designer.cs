@@ -18,6 +18,7 @@ namespace AgOpenGPS
 {
     public partial class FormGPS
     {
+        Form currentForm = null;
         #region Right Menu
         public bool isABCyled = false;
         private void btnContour_Click(object sender, EventArgs e)
@@ -443,6 +444,7 @@ namespace AgOpenGPS
             }
 
             Form f = Application.OpenForms["FormGPSData"];
+            this.currentForm = f;
 
             if (f != null)
             {
@@ -452,6 +454,7 @@ namespace AgOpenGPS
 
             f = null;
             f = Application.OpenForms["FormFieldData"];
+            this.currentForm = f;
 
             if (f != null)
             {
@@ -461,6 +464,7 @@ namespace AgOpenGPS
 
             f = null;
             f = Application.OpenForms["FormPan"];
+            this.currentForm = f;
 
             if (f != null)
             {
@@ -477,6 +481,7 @@ namespace AgOpenGPS
 
             using (var form = new FormJob(this))
             {
+                this.currentForm = form;
                 var result = form.ShowDialog(this);
 
                 if (isCancelJobMenu)

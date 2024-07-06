@@ -5,9 +5,16 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.Globalization;
 using System.Diagnostics;
+using System.Text.Json;
 
 namespace AgOpenGPS
 {
+    public class ActionC
+    {
+        public string type { get; set; }
+        public string name { get; set; }
+        public string fieldName { get; set; }
+    }
     public partial class FormGPS
     {
         // - App Sockets  -----------------------------------------------------
@@ -105,7 +112,7 @@ namespace AgOpenGPS
                                     ahrs.imuRoll = temp - ahrs.rollZero;
                                 }
                                 if (temp == float.MinValue)
-                                    ahrs.imuRoll = 0;                               
+                                    ahrs.imuRoll = 0;
 
                                 //altitude in meters
                                 temp = BitConverter.ToSingle(data, 37);
@@ -161,8 +168,8 @@ namespace AgOpenGPS
 
                                 if (isLogNMEA)
                                     pn.logNMEASentence.Append(
-                                        DateTime.UtcNow.ToString("mm:ss.ff",CultureInfo.InvariantCulture)+ " " +
-                                        Lat.ToString("N7") + " " + Lon.ToString("N7") );
+                                        DateTime.UtcNow.ToString("mm:ss.ff", CultureInfo.InvariantCulture) + " " +
+                                        Lat.ToString("N7") + " " + Lon.ToString("N7"));
 
                                 UpdateFixPosition();
                             }
@@ -177,13 +184,13 @@ namespace AgOpenGPS
                             //Heading
                             ahrs.imuHeading = (Int16)((data[6] << 8) + data[5]);
                             ahrs.imuHeading *= 0.1;
-                            
+
                             //Roll
                             double rollK = (Int16)((data[8] << 8) + data[7]);
 
                             if (ahrs.isRollInvert) rollK *= -0.1;
                             else rollK *= 0.1;
-                            rollK -= ahrs.rollZero;                           
+                            rollK -= ahrs.rollZero;
                             ahrs.imuRoll = ahrs.imuRoll * ahrs.rollFilter + rollK * (1 - ahrs.rollFilter);
 
                             //Angular velocity
@@ -250,7 +257,7 @@ namespace AgOpenGPS
                         }
 
                     case 250:
-                        {                            
+                        {
                             if (data.Length != 14)
                                 break;
                             mc.sensorData = data[5];
@@ -270,16 +277,41 @@ namespace AgOpenGPS
 
                             break;
                         }
-                     #endregion
+                        #endregion
                 }
             }
         }
 
-        private void ReceiveCustomData(byte[] data) {
+
+        private void resumeFieldAction(string fieldName)
+        {
+            if (fieldName == null) return;
+
+            if (this.isJobStarted) this.FileSaveEverythingBeforeClosingField();
+            this.currentFieldDirectory = fieldName;
+            this.FileOpenField("Resume");
+            DialogResult = DialogResult.OK;
+            //Close();
+            this.currentForm.Close();
+
+        }
+
+        private void ReceiveCustomData(byte[] data)
+        {
             Debug.WriteLine("receive some data");
             Debug.WriteLine(data.ToString());
             var str = System.Text.Encoding.Default.GetString(data);
             Debug.WriteLine(str);
+
+            ActionC action = JsonSerializer.Deserialize<ActionC>(str);
+            Debug.WriteLine(action.type);
+            //this.FileOpenField("Resume");
+            switch (action.type)
+            {
+                case "resumeField":
+                    this.resumeFieldAction(action.fieldName);
+                    break;
+            }
 
         }
 
@@ -667,7 +699,7 @@ namespace AgOpenGPS
             if (keyData == Keys.Up)
             {
                 if (sim.stepDistance < 0.4 && sim.stepDistance > -0.36) sim.stepDistance += 0.01;
-                else 
+                else
                     sim.stepDistance += 0.04;
                 if (sim.stepDistance > 4) sim.stepDistance = 4;
                 return true;
