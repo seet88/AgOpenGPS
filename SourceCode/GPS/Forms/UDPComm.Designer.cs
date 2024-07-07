@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Globalization;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Security.Cryptography;
 
 namespace AgOpenGPS
 {
@@ -27,6 +28,8 @@ namespace AgOpenGPS
         // Data stream
         private byte[] loopBuffer = new byte[1024];
         private byte[] loopBufferCustom = new byte[1024];
+        public Process pythonWebViewProcess = null;
+        public int pythonWebViewProcessId = 0;
 
         // Status delegate
         public int udpWatchCounts = 0;
@@ -290,6 +293,14 @@ namespace AgOpenGPS
             if (this.isJobStarted) this.FileSaveEverythingBeforeClosingField();
             this.currentFieldDirectory = fieldName;
             this.FileOpenField("Resume");
+            try {
+                Process proc = Process.GetProcessById(pythonWebViewProcessId);
+                proc.Kill();
+            }
+            catch (Exception ex)
+            {
+
+            }
             DialogResult = DialogResult.OK;
             //Close();
             this.currentForm.Close();

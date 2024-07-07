@@ -267,22 +267,27 @@ namespace AgOpenGPS
         private void btnFieldManager_Click(object sender, EventArgs e)
         {
             Debug.WriteLine("hello Field Manager");
-            Process.Start("http://localhost:5000/");
-            //string pathToScript = "C:\\Users\\irold\\Desktop\\FM\\startClient.py";
+            //Process.Start("http://localhost:5000/");
+            string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            string pathToScript =  Path.Combine(documentsPath, "AogFieldManager\\startClient.py"); 
 
-            //ProcessStartInfo start = new ProcessStartInfo();
-            //start.FileName = "C:\\Users\\irold\\AppData\\Local\\Programs\\Python\\Python312\\python.exe";
-            //start.Arguments = string.Format("{0}", pathToScript);
-            //start.UseShellExecute = false;
-            //start.RedirectStandardOutput = true;
-            //using (Process process = Process.Start(start))
-            //{
-            //    using (StreamReader reader = process.StandardOutput)
-            //    {
-            //        string result = reader.ReadToEnd();
-            //        Console.Write(result);
-            //    }
-            //}
+            ProcessStartInfo start = new ProcessStartInfo();
+            start.FileName = "C:\\Windows\\pyw.exe";
+            start.Arguments = string.Format("{0}", pathToScript);
+            start.UseShellExecute = false;
+            start.RedirectStandardOutput = true;
+            using (Process process = Process.Start(start))
+            {
+                Debug.WriteLine(process.Id);
+                mf.pythonWebViewProcessId = process.Id;
+
+                //process.WaitForExit();
+                //using (StreamReader reader = process.StandardOutput)
+                //{
+                //    string result = reader.ReadToEnd();
+                //    Console.Write(result);
+                //}
+            }
         }
     }
 }
