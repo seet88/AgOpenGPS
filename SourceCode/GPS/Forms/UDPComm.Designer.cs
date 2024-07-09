@@ -20,10 +20,12 @@ namespace AgOpenGPS
     {
         // - App Sockets  -----------------------------------------------------
         private Socket loopBackSocket;
+        private Socket loopBackSocketCustom;
 
         //endpoints of modules
         private EndPoint epAgIO = new IPEndPoint(IPAddress.Parse("127.255.255.255"), 17777);
         private EndPoint endPointLoopBack = new IPEndPoint(IPAddress.Loopback, 0);
+        private EndPoint endPointLoopBackCustom = new IPEndPoint(IPAddress.Loopback, 0);
 
         // Data stream
         private byte[] loopBuffer = new byte[1024];
@@ -350,11 +352,11 @@ namespace AgOpenGPS
             try
             {
                 // Initialise the socket
-                loopBackSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                loopBackSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
-                loopBackSocket.Bind(new IPEndPoint(IPAddress.Loopback, port));
-                loopBackSocket.BeginReceiveFrom(loopBufferCustom, 0, loopBufferCustom.Length, SocketFlags.None,
-                    ref endPointLoopBack, new AsyncCallback(ReceiveAppDataCustom), null);
+                loopBackSocketCustom = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                loopBackSocketCustom.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
+                loopBackSocketCustom.Bind(new IPEndPoint(IPAddress.Loopback, port));
+                loopBackSocketCustom.BeginReceiveFrom(loopBufferCustom, 0, loopBufferCustom.Length, SocketFlags.None,
+                    ref endPointLoopBackCustom, new AsyncCallback(ReceiveAppDataCustom), null);
             }
             catch (Exception ex)
             {
@@ -405,14 +407,14 @@ namespace AgOpenGPS
             try
             {
                 // Receive all data
-                int msgLen = loopBackSocket.EndReceiveFrom(asyncResult, ref endPointLoopBack);
+                int msgLen = loopBackSocketCustom.EndReceiveFrom(asyncResult, ref endPointLoopBackCustom);
 
                 byte[] localMsg = new byte[msgLen];
                 Array.Copy(loopBufferCustom, localMsg, msgLen);
 
                 // Listen for more connections again...
-                loopBackSocket.BeginReceiveFrom(loopBufferCustom, 0, loopBufferCustom.Length, SocketFlags.None,
-                    ref endPointLoopBack, new AsyncCallback(ReceiveAppDataCustom), null);
+                loopBackSocketCustom.BeginReceiveFrom(loopBufferCustom, 0, loopBufferCustom.Length, SocketFlags.None,
+                    ref endPointLoopBackCustom, new AsyncCallback(ReceiveAppDataCustom), null);
 
                 BeginInvoke((MethodInvoker)(() => ReceiveCustomData(localMsg)));
             }
