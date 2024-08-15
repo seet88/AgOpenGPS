@@ -587,7 +587,7 @@ namespace AgOpenGPS
                         {
                             if (nodePart.ChildNodes[0].ChildNodes[0].Name == "LSG")
                             {
-                                if (nodePart.ChildNodes[0].ChildNodes[0].Attributes["A"].Value == "5") //Guidance Pattern
+                                if (nodePart.ChildNodes[0].ChildNodes[0].Attributes["A"].Value == "5" && nodePart.ChildNodes[0].ChildNodes[0].HasChildNodes) //Guidance Pattern
                                 {
                                     //get the name
                                     mf.curve.desName = nodePart.ChildNodes[0].Attributes["B"].Value;
