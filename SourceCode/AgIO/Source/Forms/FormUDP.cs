@@ -47,6 +47,8 @@ namespace AgIO
             nudSecndIP.Value = ipNew[1] = ipCurrent[1] = Properties.Settings.Default.etIP_SubnetTwo;
             nudThirdIP.Value = ipNew[2] = ipCurrent[2] = Properties.Settings.Default.etIP_SubnetThree;
 
+            autoSelectNetworkCheckbox.Checked =  Properties.Settings.Default.auto_select_network ;
+
             ScanNetwork();
         }
 
@@ -339,6 +341,13 @@ namespace AgIO
         private void btnSerialMonitor_Click(object sender, EventArgs e)
         {
             mf.ShowSerialMonitor();
+        }
+
+        private void autoSelectNetworkCheckbox_CheckedChanged(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.auto_select_network= autoSelectNetworkCheckbox.Checked;
+
+            Properties.Settings.Default.Save();
         }
 
         ////get the ipv4 address only

@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using System.Windows.Forms;
@@ -9,7 +12,7 @@ using System.Windows.Forms;
 namespace AgIO
 {
     public class CTraffic
-    {     
+    {
         public int cntrGPSIn = 0;
         public int cntrGPSInBytes = 0;
         public int cntrGPSOut = 0;
@@ -19,10 +22,10 @@ namespace AgIO
 
     public class CScanReply
     {
-        public string steerIP =   "";
+        public string steerIP = "";
         public string machineIP = "";
-        public string GPS_IP =    "";
-        public string IMU_IP =    "";
+        public string GPS_IP = "";
+        public string IMU_IP = "";
         public string subnetStr = "";
 
         public byte[] subnet = { 0, 0, 0 };
@@ -41,7 +44,7 @@ namespace AgIO
         // UDP Socket
         public Socket UDPSocket;
         private EndPoint endPointUDP = new IPEndPoint(IPAddress.Any, 0);
-        
+
         public bool isUDPNetworkConnected;
 
         //2 endpoints for local and 2 udp
@@ -51,7 +54,7 @@ namespace AgIO
             Properties.Settings.Default.eth_loopTwo.ToString() + "." +
             Properties.Settings.Default.eth_loopThree.ToString() + "." +
             Properties.Settings.Default.eth_loopFour.ToString()), 15555);
-        
+
         public IPEndPoint epModule = new IPEndPoint(IPAddress.Parse(
                 Properties.Settings.Default.etIP_SubnetOne.ToString() + "." +
                 Properties.Settings.Default.etIP_SubnetTwo.ToString() + "." +
@@ -67,7 +70,7 @@ namespace AgIO
 
         //scan results placed here
         public string scanReturn = "Scanning...";
-        
+
         // Data stream
         private byte[] buffer = new byte[1024];
 
@@ -76,8 +79,73 @@ namespace AgIO
 
         public IPAddress ipCurrent;
         //initialize loopback and udp network
+
+        private bool canAutoSelecteNetwork = Properties.Settings.Default.auto_select_network;
+
+        public void LoadDefaultAddressIP()
+        {
+            bool isSubnetMatchCard = false;
+
+            List<Byte[]> availableNetworks = new List<Byte[]>();
+
+            foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (nic.Supports(NetworkInterfaceComponent.IPv4))
+                {
+                    foreach (var info in nic.GetIPProperties().UnicastAddresses)
+                    {
+                        // Only InterNetwork and not loopback which have a subnetmask
+                        if (info.Address.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(info.Address))
+                        {
+                            try
+                            {
+
+
+                                if (nic.OperationalStatus == OperationalStatus.Up
+                                    && info.IPv4Mask != null)
+                                {
+                                    byte[] data = info.Address.GetAddressBytes();
+                                    byte[] ipCurrent = epModule.Address.GetAddressBytes();
+
+                                    if (data[0] == ipCurrent[0] && data[1] == ipCurrent[1] && data[2] == ipCurrent[2])
+                                    {
+                                        isSubnetMatchCard = true;
+                                    }
+                                    availableNetworks.Add(data);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.Write("nic Loop = ");
+                                Console.WriteLine(ex.ToString());
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!isSubnetMatchCard && availableNetworks.Count == 1)
+            {
+                Properties.Settings.Default.etIP_SubnetOne = availableNetworks.First()[0];
+                Properties.Settings.Default.etIP_SubnetTwo = availableNetworks.First()[1];
+                Properties.Settings.Default.etIP_SubnetThree = availableNetworks.First()[2];
+
+                epModule = new IPEndPoint(IPAddress.Parse(
+                availableNetworks.First()[0].ToString() + "." +
+                availableNetworks.First()[1].ToString() + "." +
+                availableNetworks.First()[2].ToString() + ".255"), 8888);
+                Console.WriteLine("done");
+
+            }
+        }
+
+
         public void LoadUDPNetwork()
         {
+            if (canAutoSelecteNetwork)
+            {
+                LoadDefaultAddressIP();
+            }
             helloFromAgIO[5] = 56;
 
             lblIP.Text = "";
@@ -87,7 +155,7 @@ namespace AgIO
                 {
                     if (IPA.AddressFamily == AddressFamily.InterNetwork)
                     {
-                        string  data = IPA.ToString();
+                        string data = IPA.ToString();
                         lblIP.Text += IPA.ToString().Trim() + "\r\n";
                     }
                 }
@@ -122,13 +190,13 @@ namespace AgIO
         }
 
         private void LoadLoopback()
-        { 
+        {
             try //loopback
             {
                 loopBackSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                 loopBackSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
                 loopBackSocket.Bind(new IPEndPoint(IPAddress.Loopback, 17777));
-                loopBackSocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endPointLoopBack, 
+                loopBackSocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endPointLoopBack,
                     new AsyncCallback(ReceiveDataLoopAsync), null);
             }
             catch (Exception ex)
@@ -214,13 +282,15 @@ namespace AgIO
                     case 0xFB: //251 steer config
                         {
                             SendSteerModulePort(data, data.Length);
-                            break;                        }
+                            break;
+                        }
 
                     case 0xEE: //238 machine config
                         {
                             SendMachineModulePort(data, data.Length);
                             SendSteerModulePort(data, data.Length);
-                            break;                        }
+                            break;
+                        }
 
                     case 0xEC: //236 machine config
                         {
@@ -229,7 +299,7 @@ namespace AgIO
                             break;
                         }
                 }
-            }                            
+            }
         }
 
         private void ReceiveDataLoopAsync(IAsyncResult asyncResult)
@@ -243,7 +313,7 @@ namespace AgIO
                 Array.Copy(buffer, localMsg, msgLen);
 
                 // Listen for more connections again...
-                loopBackSocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endPointLoopBack, 
+                loopBackSocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endPointLoopBack,
                     new AsyncCallback(ReceiveDataLoopAsync), null);
 
                 BeginInvoke((MethodInvoker)(() => ReceiveFromLoopBack(localMsg)));
@@ -323,7 +393,7 @@ namespace AgIO
                 Array.Copy(buffer, localMsg, msgLen);
 
                 // Listen for more connections again...
-                UDPSocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endPointUDP, 
+                UDPSocket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref endPointUDP,
                     new AsyncCallback(ReceiveDataUDPAsync), null);
 
                 BeginInvoke((MethodInvoker)(() => ReceiveFromUDP(localMsg)));

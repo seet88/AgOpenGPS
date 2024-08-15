@@ -705,7 +705,8 @@ namespace AgIO.Properties {
                 this["etIP_SubnetThree"] = value;
             }
         }
-        
+
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("127")]
@@ -763,6 +764,22 @@ namespace AgIO.Properties {
             }
             set {
                 this["Setting"] = value;
+            }
+        }
+
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool auto_select_network
+        {
+            get
+            {
+                return ((bool)(this["auto_select_network"]));
+            }
+            set
+            {
+                this["auto_select_network"] = value;
             }
         }
     }

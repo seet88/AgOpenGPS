@@ -71,6 +71,7 @@
             this.btnSerialCancel = new System.Windows.Forms.Button();
             this.pboxSendSteer = new System.Windows.Forms.PictureBox();
             this.btnSerialMonitor = new System.Windows.Forms.Button();
+            this.autoSelectNetworkCheckbox = new System.Windows.Forms.CheckBox();
             this.label10 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.nudFirstIP)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudSecndIP)).BeginInit();
@@ -85,7 +86,7 @@
             this.label6.Font = new System.Drawing.Font("Tahoma", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label6.Location = new System.Drawing.Point(485, 543);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(139, 23);
+            this.label6.Size = new System.Drawing.Size(173, 29);
             this.label6.TabIndex = 144;
             this.label6.Text = "Current Subnet";
             this.label6.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -115,7 +116,7 @@
             this.label1.Font = new System.Drawing.Font("Tahoma", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label1.Location = new System.Drawing.Point(434, 422);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(236, 23);
+            this.label1.Size = new System.Drawing.Size(297, 29);
             this.label1.TabIndex = 147;
             this.label1.Text = "Enter New Subnet Address";
             this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -131,7 +132,7 @@
             0,
             0});
             this.nudFirstIP.Name = "nudFirstIP";
-            this.nudFirstIP.Size = new System.Drawing.Size(102, 40);
+            this.nudFirstIP.Size = new System.Drawing.Size(102, 48);
             this.nudFirstIP.TabIndex = 148;
             this.nudFirstIP.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             this.nudFirstIP.UpDownAlign = System.Windows.Forms.LeftRightAlignment.Left;
@@ -153,7 +154,7 @@
             0,
             0});
             this.nudSecndIP.Name = "nudSecndIP";
-            this.nudSecndIP.Size = new System.Drawing.Size(102, 40);
+            this.nudSecndIP.Size = new System.Drawing.Size(102, 48);
             this.nudSecndIP.TabIndex = 149;
             this.nudSecndIP.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             this.nudSecndIP.UpDownAlign = System.Windows.Forms.LeftRightAlignment.Left;
@@ -175,7 +176,7 @@
             0,
             0});
             this.nudThirdIP.Name = "nudThirdIP";
-            this.nudThirdIP.Size = new System.Drawing.Size(102, 40);
+            this.nudThirdIP.Size = new System.Drawing.Size(102, 48);
             this.nudThirdIP.TabIndex = 150;
             this.nudThirdIP.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             this.nudThirdIP.UpDownAlign = System.Windows.Forms.LeftRightAlignment.Left;
@@ -192,7 +193,7 @@
             this.label2.Font = new System.Drawing.Font("Tahoma", 21.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label2.Location = new System.Drawing.Point(472, 372);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(24, 35);
+            this.label2.Size = new System.Drawing.Size(32, 45);
             this.label2.TabIndex = 152;
             this.label2.Text = ".";
             this.label2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -203,7 +204,7 @@
             this.label3.Font = new System.Drawing.Font("Tahoma", 21.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label3.Location = new System.Drawing.Point(589, 372);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(24, 35);
+            this.label3.Size = new System.Drawing.Size(32, 45);
             this.label3.TabIndex = 153;
             this.label3.Text = ".";
             this.label3.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -214,7 +215,7 @@
             this.label8.Font = new System.Drawing.Font("Tahoma", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label8.Location = new System.Drawing.Point(783, 421);
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(37, 23);
+            this.label8.Size = new System.Drawing.Size(47, 29);
             this.label8.TabIndex = 157;
             this.label8.Text = "Set";
             this.label8.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -225,7 +226,7 @@
             this.label7.Font = new System.Drawing.Font("Tahoma", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label7.Location = new System.Drawing.Point(337, 20);
             this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(118, 23);
+            this.label7.Size = new System.Drawing.Size(147, 29);
             this.label7.TabIndex = 161;
             this.label7.Text = "Module Scan";
             this.label7.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -246,7 +247,7 @@
             this.label4.Font = new System.Drawing.Font("Tahoma", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label4.Location = new System.Drawing.Point(14, 13);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(101, 23);
+            this.label4.Size = new System.Drawing.Size(128, 29);
             this.label4.TabIndex = 163;
             this.label4.Text = "Hostname:";
             this.label4.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -258,7 +259,7 @@
             this.lblHostname.Font = new System.Drawing.Font("Tahoma", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblHostname.Location = new System.Drawing.Point(112, 13);
             this.lblHostname.Name = "lblHostname";
-            this.lblHostname.Size = new System.Drawing.Size(94, 23);
+            this.lblHostname.Size = new System.Drawing.Size(120, 29);
             this.lblHostname.TabIndex = 165;
             this.lblHostname.Text = "Hostname";
             this.lblHostname.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -270,7 +271,7 @@
             this.lblNoAdapter.ForeColor = System.Drawing.Color.Red;
             this.lblNoAdapter.Location = new System.Drawing.Point(398, 462);
             this.lblNoAdapter.Name = "lblNoAdapter";
-            this.lblNoAdapter.Size = new System.Drawing.Size(298, 25);
+            this.lblNoAdapter.Size = new System.Drawing.Size(388, 33);
             this.lblNoAdapter.TabIndex = 166;
             this.lblNoAdapter.Text = "No Adapter For This Subnet";
             this.lblNoAdapter.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -299,7 +300,7 @@
             this.label5.Font = new System.Drawing.Font("Tahoma", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label5.Location = new System.Drawing.Point(583, 313);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(56, 23);
+            this.label5.Size = new System.Drawing.Size(71, 29);
             this.label5.TabIndex = 512;
             this.label5.Text = "Fill In";
             this.label5.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -310,7 +311,7 @@
             this.label9.Font = new System.Drawing.Font("Tahoma", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label9.Location = new System.Drawing.Point(18, 534);
             this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(51, 23);
+            this.label9.Size = new System.Drawing.Size(66, 29);
             this.label9.TabIndex = 513;
             this.label9.Text = "Filter";
             this.label9.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -331,7 +332,7 @@
             this.label11.Font = new System.Drawing.Font("Tahoma", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label11.Location = new System.Drawing.Point(502, 20);
             this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(99, 23);
+            this.label11.Size = new System.Drawing.Size(127, 29);
             this.label11.TabIndex = 516;
             this.label11.Text = "IP Address";
             this.label11.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -343,7 +344,7 @@
             this.label13.Font = new System.Drawing.Font("Tahoma", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label13.Location = new System.Drawing.Point(362, 249);
             this.label13.Name = "label13";
-            this.label13.Size = new System.Drawing.Size(70, 23);
+            this.label13.Size = new System.Drawing.Size(86, 29);
             this.label13.TabIndex = 518;
             this.label13.Text = "Subnet";
             this.label13.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -354,7 +355,7 @@
             this.tableLayoutPanel1.ColumnCount = 3;
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 95F));
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 27F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 29F));
             this.tableLayoutPanel1.Controls.Add(this.lblBtnIMU, 2, 0);
             this.tableLayoutPanel1.Controls.Add(this.lblBtnGPS, 2, 2);
             this.tableLayoutPanel1.Controls.Add(this.label18, 0, 0);
@@ -383,9 +384,9 @@
             this.lblBtnIMU.BackColor = System.Drawing.Color.White;
             this.lblBtnIMU.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblBtnIMU.Font = new System.Drawing.Font("Tahoma", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblBtnIMU.Location = new System.Drawing.Point(316, 1);
+            this.lblBtnIMU.Location = new System.Drawing.Point(314, 1);
             this.lblBtnIMU.Name = "lblBtnIMU";
-            this.lblBtnIMU.Size = new System.Drawing.Size(21, 43);
+            this.lblBtnIMU.Size = new System.Drawing.Size(23, 43);
             this.lblBtnIMU.TabIndex = 533;
             this.lblBtnIMU.Text = "-";
             this.lblBtnIMU.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -396,9 +397,9 @@
             this.lblBtnGPS.BackColor = System.Drawing.Color.White;
             this.lblBtnGPS.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblBtnGPS.Font = new System.Drawing.Font("Tahoma", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblBtnGPS.Location = new System.Drawing.Point(316, 89);
+            this.lblBtnGPS.Location = new System.Drawing.Point(314, 89);
             this.lblBtnGPS.Name = "lblBtnGPS";
-            this.lblBtnGPS.Size = new System.Drawing.Size(21, 43);
+            this.lblBtnGPS.Size = new System.Drawing.Size(23, 43);
             this.lblBtnGPS.TabIndex = 532;
             this.lblBtnGPS.Text = "-";
             this.lblBtnGPS.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -424,7 +425,7 @@
             this.lblIMU_IP.Font = new System.Drawing.Font("Tahoma", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblIMU_IP.Location = new System.Drawing.Point(100, 1);
             this.lblIMU_IP.Name = "lblIMU_IP";
-            this.lblIMU_IP.Size = new System.Drawing.Size(209, 43);
+            this.lblIMU_IP.Size = new System.Drawing.Size(207, 43);
             this.lblIMU_IP.TabIndex = 526;
             this.lblIMU_IP.Text = "..";
             this.lblIMU_IP.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -435,9 +436,9 @@
             this.lblBtnMachine.BackColor = System.Drawing.Color.White;
             this.lblBtnMachine.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblBtnMachine.Font = new System.Drawing.Font("Tahoma", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblBtnMachine.Location = new System.Drawing.Point(316, 133);
+            this.lblBtnMachine.Location = new System.Drawing.Point(314, 133);
             this.lblBtnMachine.Name = "lblBtnMachine";
-            this.lblBtnMachine.Size = new System.Drawing.Size(21, 43);
+            this.lblBtnMachine.Size = new System.Drawing.Size(23, 43);
             this.lblBtnMachine.TabIndex = 531;
             this.lblBtnMachine.Text = "-";
             this.lblBtnMachine.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -463,7 +464,7 @@
             this.lblGPSIP.Font = new System.Drawing.Font("Tahoma", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblGPSIP.Location = new System.Drawing.Point(100, 89);
             this.lblGPSIP.Name = "lblGPSIP";
-            this.lblGPSIP.Size = new System.Drawing.Size(209, 43);
+            this.lblGPSIP.Size = new System.Drawing.Size(207, 43);
             this.lblGPSIP.TabIndex = 530;
             this.lblGPSIP.Text = "..";
             this.lblGPSIP.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -476,7 +477,7 @@
             this.lblSteerIP.Font = new System.Drawing.Font("Tahoma", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblSteerIP.Location = new System.Drawing.Point(100, 45);
             this.lblSteerIP.Name = "lblSteerIP";
-            this.lblSteerIP.Size = new System.Drawing.Size(209, 43);
+            this.lblSteerIP.Size = new System.Drawing.Size(207, 43);
             this.lblSteerIP.TabIndex = 526;
             this.lblSteerIP.Text = "..";
             this.lblSteerIP.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -487,9 +488,9 @@
             this.lblBtnSteer.BackColor = System.Drawing.Color.White;
             this.lblBtnSteer.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblBtnSteer.Font = new System.Drawing.Font("Tahoma", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblBtnSteer.Location = new System.Drawing.Point(316, 45);
+            this.lblBtnSteer.Location = new System.Drawing.Point(314, 45);
             this.lblBtnSteer.Name = "lblBtnSteer";
-            this.lblBtnSteer.Size = new System.Drawing.Size(21, 43);
+            this.lblBtnSteer.Size = new System.Drawing.Size(23, 43);
             this.lblBtnSteer.TabIndex = 521;
             this.lblBtnSteer.Text = "-";
             this.lblBtnSteer.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -515,7 +516,7 @@
             this.lblMachineIP.Font = new System.Drawing.Font("Tahoma", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblMachineIP.Location = new System.Drawing.Point(100, 133);
             this.lblMachineIP.Name = "lblMachineIP";
-            this.lblMachineIP.Size = new System.Drawing.Size(209, 43);
+            this.lblMachineIP.Size = new System.Drawing.Size(207, 43);
             this.lblMachineIP.TabIndex = 528;
             this.lblMachineIP.Text = "..";
             this.lblMachineIP.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -616,7 +617,7 @@
             this.btnSerialCancel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSerialCancel.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnSerialCancel.Image = global::AgIO.Properties.Resources.back_button;
-            this.btnSerialCancel.Location = new System.Drawing.Point(757, 493);
+            this.btnSerialCancel.Location = new System.Drawing.Point(757, 578);
             this.btnSerialCancel.Name = "btnSerialCancel";
             this.btnSerialCancel.Size = new System.Drawing.Size(92, 79);
             this.btnSerialCancel.TabIndex = 71;
@@ -650,22 +651,34 @@
             this.btnSerialMonitor.UseVisualStyleBackColor = true;
             this.btnSerialMonitor.Click += new System.EventHandler(this.btnSerialMonitor_Click);
             // 
+            // autoSelectNetworkCheckbox
+            // 
+            this.autoSelectNetworkCheckbox.AutoSize = true;
+            this.autoSelectNetworkCheckbox.Font = new System.Drawing.Font("Tahoma", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.autoSelectNetworkCheckbox.Location = new System.Drawing.Point(509, 603);
+            this.autoSelectNetworkCheckbox.Name = "autoSelectNetworkCheckbox";
+            this.autoSelectNetworkCheckbox.Size = new System.Drawing.Size(139, 27);
+            this.autoSelectNetworkCheckbox.TabIndex = 542;
+            this.autoSelectNetworkCheckbox.Text = "Auto select";
+            this.autoSelectNetworkCheckbox.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.autoSelectNetworkCheckbox.CheckedChanged += new System.EventHandler(this.autoSelectNetworkCheckbox_CheckedChanged);
+            // 
             // label10
             // 
             this.label10.AutoSize = true;
             this.label10.Font = new System.Drawing.Font("Tahoma", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label10.Location = new System.Drawing.Point(769, 173);
             this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(66, 18);
+            this.label10.Size = new System.Drawing.Size(85, 23);
             this.label10.TabIndex = 523;
             this.label10.Text = "Monitor";
             this.label10.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // FormUDP
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 19F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(11F, 24F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(861, 584);
+            this.ClientSize = new System.Drawing.Size(861, 669);
             this.ControlBox = false;
             this.Controls.Add(this.btnSerialMonitor);
             this.Controls.Add(this.btnHelp);
@@ -697,6 +710,7 @@
             this.Controls.Add(this.lblSubTimer);
             this.Controls.Add(this.pboxSendSteer);
             this.Controls.Add(this.label10);
+            this.Controls.Add(this.autoSelectNetworkCheckbox);
             this.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
@@ -762,5 +776,6 @@
         private System.Windows.Forms.Button btnHelp;
         private System.Windows.Forms.Button btnSerialMonitor;
         private System.Windows.Forms.Label label10;
+        private System.Windows.Forms.CheckBox autoSelectNetworkCheckbox;
     }
 }
