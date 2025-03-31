@@ -2,6 +2,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text.Json;
 
 namespace AgOpenGPS
 {
@@ -92,6 +95,64 @@ namespace AgOpenGPS
             }
         }
 
+        private double PrepareValue(double value)
+        {
+            return Math.Round(value, 3);
+        }
+        private string CreateMessageOfSectionPatch(vec2 v1, vec2 v2)
+        {
+
+            var activeSections = mf.section.Select((s, idx) => (s, idx)).Where(mf => mf.s.sectionWidth > 0 && mf.s.speedPixels > 0).ToList();
+            var onSections = activeSections.Where(mf => mf.s.isMappingOn).ToList();
+
+            Object obj = new
+            {
+                leftPoint = new { easting = PrepareValue(v1.easting), northing = PrepareValue(v1.northing) },
+                rightPoint = new { easting = PrepareValue(v2.easting), northing = PrepareValue(v2.northing) },
+                startSectionNumber = currentStartSectionNum + 1,
+                endSectionNumber = currentEndSectionNum + 1,
+                onSections = onSections.Select(mf => mf.idx + 1),
+                //sectionsInfo = activeSections.Select(mf => new { mf.s.isSectionOn, mf.s.isMappingOn, sectionNumber = mf.idx + 1 })
+            };
+
+            string message = JsonSerializer.Serialize(new { msgType = "sectionsGP", value = obj });
+
+            return message;
+        }
+
+        private object CastVectPositionToObj(vec2 v)
+        {
+            return new { easting = PrepareValue(v.easting), northing = PrepareValue(v.northing) };
+        }   
+
+        private string CreateMessageOfVehicle()
+        {
+            var z = mf.gpsHeading;
+            var q = mf.pn.fix.easting;
+            var z3 = mf.pn.fix.northing;
+            var ps = mf.pn.headingTrue;
+            var ps2 = mf.fixHeading;
+            var sections = mf.section.Select((s, idx) => (s, idx)).Where(mf => mf.s.sectionWidth > 0 && mf.s.speedPixels > 0).ToList();
+            var tool = mf.tool;
+
+            Object obj = new
+            {
+                antennaPosition = new { easting = mf.pn.fix.easting, northing = mf.pn.fix.northing, heading = mf.fixHeading },
+                sections = sections.Select(mf => 
+                    new { mf.s.isSectionOn, mf.s.isMappingOn, sectionNumber = mf.idx + 1, 
+                        position = new { lastPosition = new { left = CastVectPositionToObj(mf.s.lastLeftPoint), right = CastVectPositionToObj(mf.s.lastRightPoint) },
+                                current = new { left = CastVectPositionToObj(mf.s.leftPoint), right = CastVectPositionToObj(mf.s.rightPoint) } 
+                        } 
+                    }).ToList(),
+                speed = mf.SpeedKPH,
+            };
+
+            string message = JsonSerializer.Serialize(new { msgType = "sectionsInfo", value = obj });
+
+            return message;
+        }
+
+
         //every time a new fix, a new patch point from last point to this point
         //only need prev point on the first points of triangle strip that makes a box (2 triangles)
 
@@ -108,6 +169,9 @@ namespace AgOpenGPS
 
             //Right side
             triangleList.Add(new vec3(rightPoint.easting, rightPoint.northing, 0));
+
+            //string msg = CreateMessageOfSectionPatch(leftPoint, rightPoint);
+            //mf.SendCustomData(msg);
 
             //count the triangle pairs
             numTriangles++;

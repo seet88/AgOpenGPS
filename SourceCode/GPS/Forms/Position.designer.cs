@@ -4,7 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Windows.Forms;
 
 namespace AgOpenGPS
@@ -112,6 +114,8 @@ namespace AgOpenGPS
         public bool isMaxAngularVelocity = false;
 
         public int minSteerSpeedTimer = 0;
+        private DateTime lastMsgSendTime = DateTime.Now;
+        private DateTime lastMsgLocalGPSStaticsSendTime = DateTime.Now;
 
         public void UpdateFixPosition()
         {
@@ -143,7 +147,7 @@ namespace AgOpenGPS
 
             #region Heading
             switch (headingFromSource)
-            {               
+            {
                 //calculate current heading only when moving, otherwise use last
                 case "Fix":
                     {
@@ -724,7 +728,7 @@ namespace AgOpenGPS
 
                             //save for next meter check
                             lastReverseFix = pn.fix;
-                        }                        
+                        }
 
                         double camDelta = fixHeading - smoothCamHeading;
 
@@ -757,8 +761,8 @@ namespace AgOpenGPS
                     break;
             }
 
-            if (fixHeading >= glm.twoPI) 
-                fixHeading-= glm.twoPI;
+            if (fixHeading >= glm.twoPI)
+                fixHeading -= glm.twoPI;
 
             #endregion
 
@@ -800,7 +804,7 @@ namespace AgOpenGPS
                     trk.autoTrack3SecTimer = 0;
                     int lastIndex = trk.idx;
                     trk.idx = trk.FindClosestRefTrack(steerAxlePos);
-                    if ( lastIndex != trk.idx )
+                    if (lastIndex != trk.idx)
                     {
                         curve.isCurveValid = false;
                         curve.lastHowManyPathsAway = 98888;
@@ -911,7 +915,7 @@ namespace AgOpenGPS
 
                 setAngVel = 0.277777 * avgSpeed * tanSteerAngle / vehicle.wheelbase;
                 actAngVel = glm.toDegrees(0.277777 * avgSpeed * tanActSteerAngle / vehicle.wheelbase);
-               
+
 
                 isMaxAngularVelocity = false;
                 //greater then settings rads/sec limit steer angle
@@ -1091,7 +1095,7 @@ namespace AgOpenGPS
             //end of UppdateFixPosition
 
             //stop the timer and calc how long it took to do calcs and draw
-            frameTimeRough = (double)(swFrame.ElapsedTicks*1000) / (double)System.Diagnostics.Stopwatch.Frequency;
+            frameTimeRough = (double)(swFrame.ElapsedTicks * 1000) / (double)System.Diagnostics.Stopwatch.Frequency;
 
             if (frameTimeRough > 80) frameTimeRough = 80;
             frameTime = frameTime * 0.90 + frameTimeRough * 0.1;
@@ -1110,18 +1114,18 @@ namespace AgOpenGPS
             contourTriggerDistance = glm.Distance(pn.fix, prevContourPos);
             gridTriggerDistance = glm.DistanceSquared(pn.fix, prevGridPos);
 
-            if ( isLogElevation && gridTriggerDistance > 2.9 && patchCounter !=0 && isJobStarted)
+            if (isLogElevation && gridTriggerDistance > 2.9 && patchCounter != 0 && isJobStarted)
             {
                 //grab fix and elevation
                 sbGrid.Append(
                       pn.latitude.ToString("N7", CultureInfo.InvariantCulture) + ","
                     + pn.longitude.ToString("N7", CultureInfo.InvariantCulture) + ","
-                    + Math.Round((pn.altitude - vehicle.antennaHeight),3).ToString(CultureInfo.InvariantCulture) + ","
+                    + Math.Round((pn.altitude - vehicle.antennaHeight), 3).ToString(CultureInfo.InvariantCulture) + ","
                     + pn.fixQuality.ToString(CultureInfo.InvariantCulture) + ","
                     + pn.fix.easting.ToString("N2", CultureInfo.InvariantCulture) + ","
                     + pn.fix.northing.ToString("N2", CultureInfo.InvariantCulture) + ","
                     + pivotAxlePos.heading.ToString("N3", CultureInfo.InvariantCulture) + ","
-                    + Math.Round(ahrs.imuRoll,3).ToString(CultureInfo.InvariantCulture) + 
+                    + Math.Round(ahrs.imuRoll, 3).ToString(CultureInfo.InvariantCulture) +
                     "\r\n");
 
                 prevGridPos.easting = pivotAxlePos.easting;
@@ -1129,7 +1133,7 @@ namespace AgOpenGPS
             }
 
             //contour points
-            if (isJobStarted &&(contourTriggerDistance > tool.contourWidth 
+            if (isJobStarted && (contourTriggerDistance > tool.contourWidth
                 || contourTriggerDistance > sectionTriggerStepDistance))
             {
                 AddContourPoints();
@@ -1152,12 +1156,12 @@ namespace AgOpenGPS
             //distance = glm.Distance(pn.fix, prevFix);
             //if (avgSpeed > 1)
 
-            if ((avgSpeed - previousSpeed  ) < -vehicle.panicStopSpeed && vehicle.panicStopSpeed != 0)
+            if ((avgSpeed - previousSpeed) < -vehicle.panicStopSpeed && vehicle.panicStopSpeed != 0)
             {
                 if (isBtnAutoSteerOn) btnAutoSteer.PerformClick();
             }
 
-            previousSpeed = avgSpeed;   
+            previousSpeed = avgSpeed;
         }
 
         //all the hitch, pivot, section, trailing hitch, headings and fixes
@@ -1176,7 +1180,7 @@ namespace AgOpenGPS
             steerAxlePos.heading = fixHeading;
 
             //guidance look ahead distance based on time or tool width at least 
-            
+
             if (!ABLine.isLateralTriggered && !curve.isLateralTriggered)
             {
                 double guidanceLookDist = (Math.Max(tool.width * 0.5, avgSpeed * 0.277777 * guidanceLookAheadTime));
@@ -1250,9 +1254,9 @@ namespace AgOpenGPS
                 }
 
                 toolPos.heading = toolPivotPos.heading;
-                toolPos.easting = tankPos.easting + 
+                toolPos.easting = tankPos.easting +
                     (Math.Sin(toolPivotPos.heading) * (tool.trailingHitchLength - tool.trailingToolToPivotLength));
-                toolPos.northing = tankPos.northing + 
+                toolPos.northing = tankPos.northing +
                     (Math.Cos(toolPivotPos.heading) * (tool.trailingHitchLength - tool.trailingToolToPivotLength));
             }
 
@@ -1339,9 +1343,9 @@ namespace AgOpenGPS
 
                     //save a copy for next time
                     section[j].lastLeftPoint = section[j].leftPoint;
-                    
+
                     //Save the slower of the 2
-                    if (leftSpeed > rightSpeed) leftSpeed = rightSpeed;                    
+                    if (leftSpeed > rightSpeed) leftSpeed = rightSpeed;
                 }
 
                 section[j].rightPoint = new vec2(cosHeading * (section[j].positionRight) + easting,
@@ -1376,7 +1380,7 @@ namespace AgOpenGPS
 
                 double sped = 0;
                 //save the far left and right speed in m/sec averaged over 20%
-                if (j==0)
+                if (j == 0)
                 {
                     sped = (leftSpeed * 0.1);
                     if (sped < 0.1) sped = 0.1;
@@ -1416,7 +1420,7 @@ namespace AgOpenGPS
                     //Right side
                     vec3 point = new vec3(
                         pivotAxlePos.easting + (Math.Sin(pivotAxlePos.heading - glm.PIBy2) * -bnd.createBndOffset),
-                        pivotAxlePos.northing + (Math.Cos(pivotAxlePos.heading - glm.PIBy2) * -bnd.createBndOffset), 
+                        pivotAxlePos.northing + (Math.Cos(pivotAxlePos.heading - glm.PIBy2) * -bnd.createBndOffset),
                         pivotAxlePos.heading);
                     bnd.bndBeingMadePts.Add(point);
                 }
@@ -1427,7 +1431,7 @@ namespace AgOpenGPS
                     //Right side
                     vec3 point = new vec3(
                         pivotAxlePos.easting + (Math.Sin(pivotAxlePos.heading - glm.PIBy2) * bnd.createBndOffset),
-                        pivotAxlePos.northing + (Math.Cos(pivotAxlePos.heading - glm.PIBy2) * bnd.createBndOffset), 
+                        pivotAxlePos.northing + (Math.Cos(pivotAxlePos.heading - glm.PIBy2) * bnd.createBndOffset),
                         pivotAxlePos.heading);
                     bnd.bndBeingMadePts.Add(point);
                 }
@@ -1495,10 +1499,63 @@ namespace AgOpenGPS
             prevContourPos.northing = pivotAxlePos.northing;
             prevContourPos.easting = pivotAxlePos.easting;
         }
+        private double PrepareValue(double value)
+        {
+            return Math.Round(value, 3);
+        }
+        private object CastVectPositionToObj(vec2 v)
+        {
+            return new { easting = PrepareValue(v.easting), northing = PrepareValue(v.northing) };
+        }
+        private string CreateMessageOfVehicle()
+        {
+            var sections = this.section.Select((s, idx) => (s, idx)).Where(mft => mft.s.sectionWidth > 0 && mft.s.speedPixels > 0).ToList();
+            var tool = this.tool;
+
+            Object obj = new
+            {
+                antennaPosition = new { easting = PrepareValue(this.pn.fix.easting), northing = PrepareValue(this.pn.fix.northing), heading = PrepareValue(this.fixHeading) },
+                sections = sections.Select(mft =>
+                    new
+                    {
+                        mft.s.isSectionOn,
+                        mft.s.isMappingOn,
+                        mft.s.sectionBtnState,
+                        sectionNumber = mft.idx + 1,
+                        position = new
+                        {
+                            //lastPosition = new { left = CastVectPositionToObj(mft.s.lastLeftPoint), right = CastVectPositionToObj(mft.s.lastRightPoint) },
+                            current = new { left = CastVectPositionToObj(mft.s.leftPoint), right = CastVectPositionToObj(mft.s.rightPoint) }
+                        }
+                    }).ToList(),
+                speed = this.SpeedKPH,
+            };
+
+            string message = JsonSerializer.Serialize(new { msgType = "sectionsInfo", value = obj });
+
+            return message;
+        }
+
+        private void SendMessage()
+        {
+            if (DateTime.Now - lastMsgSendTime > TimeSpan.FromSeconds(3))
+            {
+                string msg = CreateMessageOfVehicle();
+                this.SendCustomData(msg);
+
+                lastMsgSendTime = DateTime.Now;
+            }
+            if(DateTime.Now - lastMsgLocalGPSStaticsSendTime > TimeSpan.FromSeconds(50))
+            {                
+                pn.SendMsgLocalGPSStaticValues();
+                lastMsgLocalGPSStaticsSendTime = DateTime.Now;
+            }
+        }
 
         //add the points for section, contour line points, Area Calc feature
         private void AddSectionOrPathPoints()
         {
+
             if (recPath.isRecordOn)
             {
                 //keep minimum speed of 1.0
@@ -1533,6 +1590,8 @@ namespace AgOpenGPS
                     patchCounter++;
                 }
             }
+
+            SendMessage();
         }
 
         //the start of first few frames to initialize entire program
@@ -1553,7 +1612,7 @@ namespace AgOpenGPS
                 isFirstFixPositionSet = true;
 
                 //most recent fixes
-                prevFix.easting =  pn.fix.easting;
+                prevFix.easting = pn.fix.easting;
                 prevFix.northing = pn.fix.northing;
 
                 //run once and return

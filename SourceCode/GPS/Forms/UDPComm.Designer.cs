@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace AgOpenGPS
 {
@@ -15,6 +16,7 @@ namespace AgOpenGPS
         public string type { get; set; }
         public string name { get; set; }
         public string fieldName { get; set; }
+        public string directionToSteer { get; set; }
     }
     public partial class FormGPS
     {
@@ -26,6 +28,7 @@ namespace AgOpenGPS
         private EndPoint epAgIO = new IPEndPoint(IPAddress.Parse("127.255.255.255"), 17777);
         private EndPoint endPointLoopBack = new IPEndPoint(IPAddress.Loopback, 0);
         private EndPoint endPointLoopBackCustom = new IPEndPoint(IPAddress.Loopback, 0);
+        private EndPoint endPointSenderCustom = new IPEndPoint(IPAddress.Parse("127.255.255.255"), 8896);
 
         // Data stream
         private byte[] loopBuffer = new byte[1024];
@@ -295,7 +298,8 @@ namespace AgOpenGPS
             if (this.isJobStarted) this.FileSaveEverythingBeforeClosingField();
             this.currentFieldDirectory = fieldName;
             this.FileOpenField("Resume");
-            try {
+            try
+            {
                 Process proc = Process.GetProcessById(pythonWebViewProcessId);
                 proc.Kill();
             }
@@ -323,6 +327,21 @@ namespace AgOpenGPS
             {
                 case "resumeField":
                     this.resumeFieldAction(action.fieldName);
+                    break;
+                case "changeSteerDirection":
+
+                    this.vehicle.isInFreeDriveMode = true;
+                    if (action.directionToSteer == "right")
+                    {
+                        this.HigherSteerAngleInFreeDrive();
+                    }
+                    else if (action.directionToSteer == "left")
+                    {
+                        this.LowerSteerAngleInFreeDrive();
+                    }
+                    //this.LowerSteerAngleInFreeDrive();
+                    //mf.vehicle.driveFreeSteerAngle--;
+                    //if (mf.vehicle.driveFreeSteerAngle < -40) mf.vehicle.driveFreeSteerAngle = -40;
                     break;
             }
 
@@ -354,7 +373,7 @@ namespace AgOpenGPS
                 // Initialise the socket
                 loopBackSocketCustom = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                 loopBackSocketCustom.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
-                loopBackSocketCustom.Bind(new IPEndPoint(IPAddress.Loopback, port));
+                loopBackSocketCustom.Bind(new IPEndPoint(IPAddress.Any, port));
                 loopBackSocketCustom.BeginReceiveFrom(loopBufferCustom, 0, loopBufferCustom.Length, SocketFlags.None,
                     ref endPointLoopBackCustom, new AsyncCallback(ReceiveAppDataCustom), null);
             }
@@ -421,6 +440,34 @@ namespace AgOpenGPS
             catch (Exception)
             {
                 // MessageBox.Show("ReceiveData Error: " + ex.Message, "UDP Server", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        public void SendCustomData(string message)
+        {
+            try
+            {
+                //convert the message to bytes
+                byte[] byteData = Encoding.ASCII.GetBytes(message);
+                loopBackSocketCustom.BeginSendTo(byteData, 0, byteData.Length, SocketFlags.None,
+                        endPointSenderCustom, new AsyncCallback(SendAsyncCustomLoopData), null);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show("Send Error: " + e.Message, "UDP custom Client", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        public void SendAsyncCustomLoopData(IAsyncResult asyncResult)
+        {
+            try
+            {
+                var res = loopBackSocketCustom.EndSend(asyncResult);
+                Debug.WriteLine(res);
+            }
+            catch (Exception)
+            {
+                //MessageBox.Show("SendData Error: " + ex.Message, "UDP Server", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

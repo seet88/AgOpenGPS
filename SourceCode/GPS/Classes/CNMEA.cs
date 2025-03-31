@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Globalization;
 using System.Text;
+using static System.Collections.Specialized.BitVector32;
+using System.Text.Json;
 
 namespace AgOpenGPS
 {
@@ -64,6 +66,7 @@ namespace AgOpenGPS
 
             ConvertWGS84ToLocal(latitude, longitude, out double northing, out double easting);
             mf.worldGrid.checkZoomWorldGrid(northing, easting);
+            SendMsgLocalGPSStaticValues();
         }
 
         public void ConvertWGS84ToLocal(double Lat, double Lon, out double Northing, out double Easting)
@@ -91,6 +94,28 @@ namespace AgOpenGPS
             double Lon = (Easting / mPerDegreeLon) + lonStart;
 
             return Lon.ToString("N7", CultureInfo.InvariantCulture) + ',' + Lat.ToString("N7", CultureInfo.InvariantCulture) + ",0 ";
+        }
+
+        public string CreateMsgLocalGPSStaticValues()
+        {
+            //create the message
+            Object obj = new
+            {
+                mPerDegreeLat = mPerDegreeLat,
+                mPerDegreeLon = mPerDegreeLon,
+                lonStart = lonStart,
+                latStart = latStart,
+            };
+
+            string message = JsonSerializer.Serialize(new { msgType = "localCordsToGPSStatics", value = obj });
+
+
+            return message;
+        }  
+        
+        public void SendMsgLocalGPSStaticValues()
+        {
+            mf.SendCustomData(this.CreateMsgLocalGPSStaticValues());
         }
     }
 }
