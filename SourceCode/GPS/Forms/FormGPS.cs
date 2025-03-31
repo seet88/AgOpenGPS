@@ -1210,6 +1210,17 @@ namespace AgOpenGPS
 
         private readonly Random _random = new Random();
 
+        public void HigherSteerAngleInFreeDrive()
+        {
+            this.vehicle.driveFreeSteerAngle++;
+            if (this.vehicle.driveFreeSteerAngle > 40) this.vehicle.driveFreeSteerAngle = 40;
+        }
+        public void LowerSteerAngleInFreeDrive()
+        {
+            this.vehicle.driveFreeSteerAngle--;
+            if (this.vehicle.driveFreeSteerAngle < -40) this.vehicle.driveFreeSteerAngle = -40;
+        }
+
     }//class FormGPS
 }//namespace AgOpenGPS
 

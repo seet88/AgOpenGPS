@@ -965,7 +965,7 @@ namespace AgOpenGPS
             mf.p_251.pgn[mf.p_251.set0] = Properties.Settings.Default.setArdSteer_setting0;
             mf.p_251.pgn[mf.p_251.set1] = Properties.Settings.Default.setArdSteer_setting1;
             mf.p_251.pgn[mf.p_251.maxPulse] = Properties.Settings.Default.setArdSteer_maxPulseCounts;
-            mf.p_251.pgn[mf.p_251.minSpeed] = unchecked((byte)(Properties.Settings.Default.setAS_minSteerSpeed * 10)); 
+            mf.p_251.pgn[mf.p_251.minSpeed] = unchecked((byte)(Properties.Settings.Default.setAS_minSteerSpeed * 10));
 
             if (Properties.Settings.Default.setAS_isConstantContourOn)
                 mf.p_251.pgn[mf.p_251.angVel] = 1;
@@ -1021,15 +1021,26 @@ namespace AgOpenGPS
 
         private void btnSteerAngleUp_MouseDown(object sender, MouseEventArgs e)
         {
-            mf.vehicle.driveFreeSteerAngle++;
-            if (mf.vehicle.driveFreeSteerAngle > 40) mf.vehicle.driveFreeSteerAngle = 40;
+            mf.HigherSteerAngleInFreeDrive();
         }
+
+        //private void HigherSteerAngleInFreeDrive()
+        //{
+        //    mf.vehicle.driveFreeSteerAngle++;
+        //    if (mf.vehicle.driveFreeSteerAngle > 40) mf.vehicle.driveFreeSteerAngle = 40;
+        //}
 
         private void btnSteerAngleDown_MouseDown(object sender, MouseEventArgs e)
         {
-            mf.vehicle.driveFreeSteerAngle--;
-            if (mf.vehicle.driveFreeSteerAngle < -40) mf.vehicle.driveFreeSteerAngle = -40;
+            //LowerSteerAngleInFreeDrive();
+            mf.LowerSteerAngleInFreeDrive();
         }
+
+        //private void LowerSteerAngleInFreeDrive()
+        //{
+        //    mf.vehicle.driveFreeSteerAngle--;
+        //    if (mf.vehicle.driveFreeSteerAngle < -40) mf.vehicle.driveFreeSteerAngle = -40;
+        //}
 
         #endregion
 
