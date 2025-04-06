@@ -1548,6 +1548,8 @@ namespace AgOpenGPS
             if(DateTime.Now - lastMsgLocalGPSStaticsSendTime > TimeSpan.FromSeconds(50))
             {                
                 pn.SendMsgLocalGPSStaticValues();
+                bnd.SendMsgLocalBoundaryValues();
+                this.trk.SendMsgLocalLinesValues();
                 lastMsgLocalGPSStaticsSendTime = DateTime.Now;
             }
         }

@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
 
 namespace AgOpenGPS
 {
@@ -188,6 +191,39 @@ namespace AgOpenGPS
                     bndList[j].turnLine.Add(end);
                 }
             }
+        }
+
+
+        private double PrepareValue(double value)
+        {
+            return Math.Round(value, 3);
+        }
+        private object CastVectPositionToObj(vec3 v)
+        {
+            return new { easting = PrepareValue(v.easting), northing = PrepareValue(v.northing), heading = PrepareValue(v.heading) };
+        }
+        private string CreateMsgLocalBoundry()
+        {
+            if (bndList.Count > 0)
+            {
+                Object obj = new
+                {
+                    boundary = bndList.Select(b => new
+                    {
+                        fence = b.fenceLine.Select(CastVectPositionToObj),
+                        //turn = b.turnLine.Select(CastVectPositionToObj),
+                    }),
+                };
+                string message = JsonSerializer.Serialize(new { msgType = "boundary", value = obj });
+                var z = message.Length;
+                return message;
+            }
+            return null;
+        }
+
+        public void SendMsgLocalBoundaryValues()
+        {
+            mf.SendCustomData(this.CreateMsgLocalBoundry());
         }
     }
 }

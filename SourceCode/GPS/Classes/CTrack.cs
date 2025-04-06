@@ -4,7 +4,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Windows.Forms;
 
 namespace AgOpenGPS
@@ -326,6 +328,72 @@ namespace AgOpenGPS
                 //    gArr[idx].curvePts.Add(arr[i]);
                 //}
             }
+        }
+
+
+        private double PrepareValue(double value)
+        {
+            return Math.Round(value, 3);
+        }
+        private object CastVectPositionToObj(vec3 v)
+        {
+            return new { easting = PrepareValue(v.easting), northing = PrepareValue(v.northing), heading = PrepareValue(v.heading) };
+        }
+        private object CastVectPositionToObj(vec2 v)
+        {
+            return new { easting = PrepareValue(v.easting), northing = PrepareValue(v.northing) };
+        }
+
+        public string CreateCurrentABLine()
+        {
+            if (idx >= 0)
+            {
+                Object obj = new
+                {
+                    pointA = CastVectPositionToObj(gArr[idx].ptA),
+                    pointB = CastVectPositionToObj(gArr[idx].ptB),
+                };
+                string message = JsonSerializer.Serialize(new { msgType = "currentABLine", value = obj });
+                var z = message.Length;
+                return message;
+            }
+            return null;
+        }
+
+
+        public string CreateCurrentCurveLine()
+        {
+            if (idx >= 0)
+            {
+                Object obj = new
+                {
+                    curveLine = gArr[idx].curvePts.Select(CastVectPositionToObj),
+                };
+                string message = JsonSerializer.Serialize(new { msgType = "currentCurveLine", value = obj });
+                var z = message.Length;
+                return message;
+            }
+            return null;
+        }
+
+        public string CreateCurrentLine()
+        {
+            if(idx < 0 || gArr.Count == 0) return "";
+            if (gArr[idx].mode == (int)TrackMode.AB)
+            {
+               
+                return CreateCurrentABLine();
+            }
+            else
+            {
+               
+                return CreateCurrentCurveLine();
+            }   
+        }
+
+        public void SendMsgLocalLinesValues()
+        {
+            mf.SendCustomData(this.CreateCurrentLine());
         }
     }
 
