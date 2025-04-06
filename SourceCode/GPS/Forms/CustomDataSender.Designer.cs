@@ -28,42 +28,65 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.button1 = new System.Windows.Forms.Button();
+            this.saveToConfig = new System.Windows.Forms.Button();
             this.textBox1 = new System.Windows.Forms.TextBox();
-            this.textBox2 = new System.Windows.Forms.TextBox();
+            this.txt_traccar_id = new System.Windows.Forms.TextBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.lbl_traccar_id = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
-            // button1
+            // saveToConfig
             // 
-            this.button1.Location = new System.Drawing.Point(223, 135);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
-            this.button1.TabIndex = 0;
-            this.button1.Text = "button1";
-            this.button1.UseVisualStyleBackColor = true;
+            this.saveToConfig.Location = new System.Drawing.Point(65, 129);
+            this.saveToConfig.Name = "saveToConfig";
+            this.saveToConfig.Size = new System.Drawing.Size(75, 23);
+            this.saveToConfig.TabIndex = 0;
+            this.saveToConfig.Text = "Save";
+            this.saveToConfig.UseVisualStyleBackColor = true;
+            this.saveToConfig.Click += new System.EventHandler(this.saveToConfig_Click);
             // 
             // textBox1
             // 
-            this.textBox1.Location = new System.Drawing.Point(89, 71);
+            this.textBox1.Location = new System.Drawing.Point(65, 60);
             this.textBox1.Name = "textBox1";
             this.textBox1.Size = new System.Drawing.Size(100, 22);
             this.textBox1.TabIndex = 1;
             // 
-            // textBox2
+            // txt_traccar_id
             // 
-            this.textBox2.Location = new System.Drawing.Point(223, 71);
-            this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(100, 22);
-            this.textBox2.TabIndex = 2;
+            this.txt_traccar_id.Location = new System.Drawing.Point(179, 60);
+            this.txt_traccar_id.Name = "txt_traccar_id";
+            this.txt_traccar_id.Size = new System.Drawing.Size(100, 22);
+            this.txt_traccar_id.TabIndex = 2;
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(62, 41);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(44, 16);
+            this.label1.TabIndex = 3;
+            this.label1.Text = "label1";
+            // 
+            // lbl_traccar_id
+            // 
+            this.lbl_traccar_id.AutoSize = true;
+            this.lbl_traccar_id.Location = new System.Drawing.Point(176, 41);
+            this.lbl_traccar_id.Name = "lbl_traccar_id";
+            this.lbl_traccar_id.Size = new System.Drawing.Size(62, 16);
+            this.lbl_traccar_id.TabIndex = 4;
+            this.lbl_traccar_id.Text = "traccar Id";
             // 
             // CustomDataSender
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Controls.Add(this.textBox2);
+            this.Controls.Add(this.lbl_traccar_id);
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.txt_traccar_id);
             this.Controls.Add(this.textBox1);
-            this.Controls.Add(this.button1);
+            this.Controls.Add(this.saveToConfig);
             this.Name = "CustomDataSender";
             this.Text = "CustomDataSender";
             this.ResumeLayout(false);
@@ -73,8 +96,10 @@
 
         #endregion
 
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button saveToConfig;
         private System.Windows.Forms.TextBox textBox1;
-        private System.Windows.Forms.TextBox textBox2;
+        private System.Windows.Forms.TextBox txt_traccar_id;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label lbl_traccar_id;
     }
 }

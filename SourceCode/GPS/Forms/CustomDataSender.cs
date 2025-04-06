@@ -16,5 +16,10 @@ namespace AgOpenGPS.Forms
         {
             InitializeComponent();
         }
+
+        private void saveToConfig_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

@@ -740,5 +740,23 @@
     <Setting Name="setWindow_isKioskMode" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+	<Setting Name="setMQTT_URL" Type="System.String" Scope="User">
+		<Value Profile="(Default)">brokerUrl</Value>
+	</Setting>
+	<Setting Name="setMQTT_port" Type="System.String" Scope="User">
+		<Value Profile="(Default)">brokerPort</Value>
+	</Setting>
+	<Setting Name="setMQTT_user_name" Type="System.String" Scope="User">
+		<Value Profile="(Default)">broker name</Value>
+	</Setting>
+	<Setting Name="setMQTT_user_password" Type="System.String" Scope="User">
+		<Value Profile="(Default)">brokerPassword</Value>
+	</Setting>
+	<Setting Name="setTraccar_url" Type="System.String" Scope="User">
+		<Value Profile="(Default)">traccar url</Value>
+	</Setting>
+	<Setting Name="setTraccar_client_id" Type="System.String" Scope="User">
+		<Value Profile="(Default)">traccar client id</Value>
+	</Setting>
   </Settings>
 </SettingsFile>

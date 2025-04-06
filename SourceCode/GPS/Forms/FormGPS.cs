@@ -1,6 +1,7 @@
 ﻿//Please, if you use this, share the improvements
 
 using AgOpenGPS;
+using AgOpenGPS.Classes;
 using AgOpenGPS.Properties;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
@@ -254,6 +255,8 @@ namespace AgOpenGPS
         /// </summary>
         public CWindowsSettingsBrightnessController displayBrightness;
 
+        public CCustomDataSender customDataSender;
+
         #endregion // Class Props and instances
 
         public FormGPS()
@@ -347,6 +350,9 @@ namespace AgOpenGPS
 
             //shape file object
             shape = new ShapeFile(this);
+
+            //custom data sender
+            customDataSender = new CCustomDataSender(this);
         }
 
         private void FormGPS_Load(object sender, EventArgs e)

@@ -2975,5 +2975,77 @@ namespace AgOpenGPS.Properties {
                 this["setWindow_isKioskMode"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("brokerUrl")]
+        public string setMQTT_URL {
+            get {
+                return ((string)(this["setMQTT_URL"]));
+            }
+            set {
+                this["setMQTT_URL"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("brokerPort")]
+        public string setMQTT_port {
+            get {
+                return ((string)(this["setMQTT_port"]));
+            }
+            set {
+                this["setMQTT_port"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("broker name")]
+        public string setMQTT_user_name {
+            get {
+                return ((string)(this["setMQTT_user_name"]));
+            }
+            set {
+                this["setMQTT_user_name"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("brokerPassword")]
+        public string setMQTT_user_password {
+            get {
+                return ((string)(this["setMQTT_user_password"]));
+            }
+            set {
+                this["setMQTT_user_password"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("traccar url")]
+        public string setTraccar_url {
+            get {
+                return ((string)(this["setTraccar_url"]));
+            }
+            set {
+                this["setTraccar_url"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("traccar client id")]
+        public string setTraccar_client_id {
+            get {
+                return ((string)(this["setTraccar_client_id"]));
+            }
+            set {
+                this["setTraccar_client_id"] = value;
+            }
+        }
     }
 }
