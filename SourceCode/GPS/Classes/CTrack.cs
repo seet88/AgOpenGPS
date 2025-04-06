@@ -1,4 +1,5 @@
-﻿using OpenTK.Graphics.OpenGL;
+﻿using AgOpenGPS.Forms;
+using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -393,7 +394,8 @@ namespace AgOpenGPS
 
         public void SendMsgLocalLinesValues()
         {
-            mf.SendCustomData(this.CreateCurrentLine());
+            //mf.SendCustomData(this.CreateCurrentLine());
+            mf.customDataSender.SendDataViaMQTT(this.CreateCurrentLine());
         }
     }
 

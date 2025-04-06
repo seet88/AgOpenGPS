@@ -2990,10 +2990,10 @@ namespace AgOpenGPS.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("brokerPort")]
-        public string setMQTT_port {
+        [global::System.Configuration.DefaultSettingValueAttribute("8884")]
+        public int setMQTT_port {
             get {
-                return ((string)(this["setMQTT_port"]));
+                return ((int)(this["setMQTT_port"]));
             }
             set {
                 this["setMQTT_port"] = value;

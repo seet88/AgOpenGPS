@@ -55,6 +55,12 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\References\Keypad.dll</HintPath>
     </Reference>
+    <Reference Include="MQTTnet, Version=4.3.7.1207, Culture=neutral, PublicKeyToken=fdb7629f2e364a63, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\MQTTnet.4.3.7.1207\lib\net48\MQTTnet.dll</HintPath>
+    </Reference>
+    <Reference Include="MQTTnet.Extensions.ManagedClient, Version=4.3.7.1207, Culture=neutral, PublicKeyToken=fdb7629f2e364a63, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\MQTTnet.Extensions.ManagedClient.4.3.7.1207\lib\net48\MQTTnet.Extensions.ManagedClient.dll</HintPath>
+    </Reference>
     <Reference Include="RepeatButtonControl, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\References\RepeatButtonControl.dll</HintPath>
@@ -269,6 +275,7 @@
       <SubType>Designer</SubType>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

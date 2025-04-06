@@ -743,8 +743,8 @@
 	<Setting Name="setMQTT_URL" Type="System.String" Scope="User">
 		<Value Profile="(Default)">brokerUrl</Value>
 	</Setting>
-	<Setting Name="setMQTT_port" Type="System.String" Scope="User">
-		<Value Profile="(Default)">brokerPort</Value>
+	<Setting Name="setMQTT_port" Type="System.Int32" Scope="User">
+		<Value Profile="(Default)">8884</Value>
 	</Setting>
 	<Setting Name="setMQTT_user_name" Type="System.String" Scope="User">
 		<Value Profile="(Default)">broker name</Value>

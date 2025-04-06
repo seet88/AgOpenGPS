@@ -1543,6 +1543,8 @@ namespace AgOpenGPS
                 string msg = CreateMessageOfVehicle();
                 this.SendCustomData(msg);
 
+                this.customDataSender.SendDataViaMQTT(msg);
+
                 lastMsgSendTime = DateTime.Now;
             }
             if(DateTime.Now - lastMsgLocalGPSStaticsSendTime > TimeSpan.FromSeconds(50))
