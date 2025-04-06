@@ -1221,6 +1221,14 @@ namespace AgOpenGPS
             }
         }
 
+        private void customDataSenderStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using (var form = new CustomDataSender())
+            {
+                form.ShowDialog(this);
+            }
+        }
+
         private void kioskModeToolStrip_Click(object sender, EventArgs e)
         {
             isKioskMode = !isKioskMode;
