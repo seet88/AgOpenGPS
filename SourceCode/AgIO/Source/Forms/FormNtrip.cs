@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using AgIO.Controls;
+using AgLibrary.Logging;
 
 namespace AgIO
 {
@@ -102,14 +105,19 @@ namespace AgIO
             {
                 Properties.Settings.Default.setRadio_isOn = mf.isRadio_RequiredOn = false;
                 Properties.Settings.Default.setPass_isOn = mf.isSerialPass_RequiredOn = false;
+                Log.EventWriter("NTRIP Turned on");
+            }
+            else
+            {
+                Log.EventWriter("NTRIP Turned off");
             }
 
             Properties.Settings.Default.Save();
 
             mf.YesMessageBox("Restart of AgIO is Required - Restarting");
+            Log.EventWriter("Program Reset: Selecting NTRIP Feature");
 
-            Application.Restart();
-            Environment.Exit(0);
+            Program.Restart();
         }
 
         //get the ipv4 address only
@@ -151,11 +159,13 @@ namespace AgIO
                 else
                 {
                     mf.YesMessageBox("Can't Find: " + actualIP);
+                    Log.EventWriter("Can't Find Caster IP");
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 mf.YesMessageBox("Can't Find: " + actualIP);
+                Log.EventWriter("Catch -> Can't Find Caster IP" + ex.ToString());
             }
         }
 
@@ -252,8 +262,9 @@ namespace AgIO
             }
             else
             {
-                Application.Restart();
-                Environment.Exit(0);
+                Log.EventWriter("Program Reset: Button Ok on Ntrip Form");
+                
+                Program.Restart();
             }
         }
 
@@ -273,6 +284,7 @@ namespace AgIO
 
         private void btnGetSourceTable_Click(object sender, EventArgs e)
         {
+            btnGetSourceTable.Enabled = false;
             IPAddress casterIP = IPAddress.Parse(tboxCasterIP.Text.Trim()); //Select correct Address
             int casterPort = (int)nudCasterPort.Value; //Select correct port (usually 80)
 
@@ -322,14 +334,18 @@ namespace AgIO
                     }
                 }
             }
-            catch (SocketException)
+            catch (SocketException ex)
             {
                 mf.TimedMessageBox(2000, "Socket Exception", "Invalid IP:Port");
+                btnGetSourceTable.Enabled = true;
+                Log.EventWriter("Catch -> Socket Exception, Invalid IP:Port" + ex.ToString());
                 return;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 mf.TimedMessageBox(2000, "Exception", "Get Source Table Error");
+                btnGetSourceTable.Enabled = true;
+                Log.EventWriter("Catch - > Get Source Table Error" + ex.ToString());
                 return;
             }
 
@@ -346,37 +362,40 @@ namespace AgIO
                 mf.TimedMessageBox(2000, "Error", "No Source Data");
             }
 
+            btnGetSourceTable.Enabled = true;
+
+
             // Console.WriteLine(page);
             // Process.Start(syte);
         }
 
         private void NudCasterPort_Enter(object sender, EventArgs e)
         {
-            mf.KeypadToNUD((NumericUpDown)sender, this);
+            ((NumericUpDown)sender).ShowKeypad(this);
             btnSerialCancel.Focus();
         }
 
         private void NudGGAInterval_Enter(object sender, EventArgs e)
         {
-            mf.KeypadToNUD((NumericUpDown)sender, this);
+            ((NumericUpDown)sender).ShowKeypad(this);
             btnSerialCancel.Focus();
         }
 
         private void NudLatitude_Enter(object sender, EventArgs e)
         {
-            mf.KeypadToNUD((NumericUpDown)sender, this);
+            ((NumericUpDown)sender).ShowKeypad(this);
             btnSerialCancel.Focus();
         }
 
         private void NudLongitude_Enter(object sender, EventArgs e)
         {
-            mf.KeypadToNUD((NumericUpDown)sender, this);
+            ((NumericUpDown)sender).ShowKeypad(this);
             btnSerialCancel.Focus();
         }
 
         private void NudSendToUDPPort_Enter(object sender, EventArgs e)
         {
-            mf.KeypadToNUD((NumericUpDown)sender, this);
+            ((NumericUpDown)sender).ShowKeypad(this);
             btnSerialCancel.Focus();
         }
 
@@ -384,7 +403,7 @@ namespace AgIO
         {
             if (mf.isKeyboardOn)
             {
-                mf.KeyboardToText((TextBox)sender, this);
+                ((TextBox)sender).ShowKeyboard(this);
                 btnSerialCancel.Focus();
             }
             btnGetIP.PerformClick();
@@ -394,7 +413,7 @@ namespace AgIO
         {
             if (mf.isKeyboardOn)
             {
-                mf.KeyboardToText((TextBox)sender, this);
+                ((TextBox)sender).ShowKeyboard(this);
                 btnSerialCancel.Focus();
             }
         }
@@ -403,7 +422,7 @@ namespace AgIO
         {
             if (mf.isKeyboardOn)
             {
-                mf.KeyboardToText((TextBox)sender, this);
+                ((TextBox)sender).ShowKeyboard(this);
                 btnSerialCancel.Focus();
             }
         }
@@ -412,7 +431,7 @@ namespace AgIO
         {
             if (mf.isKeyboardOn)
             {
-                mf.KeyboardToText((TextBox)sender, this);
+                ((TextBox)sender).ShowKeyboard(this);
                 btnSerialCancel.Focus();
             }
         }

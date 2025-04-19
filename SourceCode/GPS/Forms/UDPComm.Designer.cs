@@ -8,6 +8,10 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Security.Cryptography;
 using System.Text;
+using System.Xml.Linq;
+using AgOpenGPS.Culture;
+using System.Text;
+using AgLibrary.Logging;
 
 namespace AgOpenGPS
 {
@@ -37,7 +41,7 @@ namespace AgOpenGPS
         public int pythonWebViewProcessId = 0;
 
         // Status delegate
-        public int udpWatchCounts = 0;
+        public int missedSentenceCount = 0;
         public int udpWatchLimit = 70;
 
         private readonly Stopwatch udpWatch = new Stopwatch();
@@ -71,10 +75,7 @@ namespace AgOpenGPS
                         {
                             if (udpWatch.ElapsedMilliseconds < udpWatchLimit)
                             {
-                                udpWatchCounts++;
-                                if (isLogNMEA) pn.logNMEASentence.Append("*** "
-                                    + DateTime.UtcNow.ToString("ss.ff -> ", CultureInfo.InvariantCulture)
-                                    + udpWatch.ElapsedMilliseconds + "\r\n");
+                                missedSentenceCount++;
                                 return;
                             }
                             udpWatch.Reset();
@@ -100,6 +101,8 @@ namespace AgOpenGPS
                                     pn.headingTrueDual = temp + pn.headingTrueDualOffset;
                                     if (pn.headingTrueDual >= 360) pn.headingTrueDual -= 360;
                                     else if (pn.headingTrueDual < 0) pn.headingTrueDual += 360;
+
+                                    if (ahrs.isDualAsIMU) ahrs.imuHeading = pn.headingTrueDual;
                                 }
 
                                 //from single antenna sentences (VTG,RMC)
@@ -173,11 +176,6 @@ namespace AgOpenGPS
                                 }
 
                                 sentenceCounter = 0;
-
-                                if (isLogNMEA)
-                                    pn.logNMEASentence.Append(
-                                        DateTime.UtcNow.ToString("mm:ss.ff", CultureInfo.InvariantCulture) + " " +
-                                        Lat.ToString("N7") + " " + Lon.ToString("N7"));
 
                                 UpdateFixPosition();
                             }
@@ -255,12 +253,6 @@ namespace AgOpenGPS
                             //Actual PWM
                             mc.pwmDisplay = data[12];
 
-                            if (isLogNMEA)
-                                pn.logNMEASentence.Append(
-                                    DateTime.UtcNow.ToString("mm:ss.ff", CultureInfo.InvariantCulture) + " AS " +
-                                    mc.actualSteerAngleDegrees.ToString("N1") + "\r\n"
-                                    );
-
                             break;
                         }
 
@@ -271,6 +263,50 @@ namespace AgOpenGPS
                             mc.sensorData = data[5];
                             break;
                         }
+
+                    case 221: // DD
+                        {                    
+                            //{ 0x80, 0x81, 0x7f, 221, number bytes, seconds to display, mystery byte, 98,99,100,101, CRC };
+                            if (data.Length < 9) break;
+
+                            if (isHardwareMessages)
+                            {
+                                lblHardwareMessage.Text = System.Text.Encoding.UTF8.GetString(data, 7, data[4] - 2);
+                                lblHardwareMessage.Visible = true;
+                                hardwareLineCounter = data[5] * 10;
+
+                                Log.EventWriter(lblHardwareMessage.Text);
+
+                                //color based on byte 6
+                                lblHardwareMessage.BackColor = data[6] == 0 ? Color.Salmon : Color.Bisque;
+                                lblHardwareMessage.ForeColor = Color.Black;
+                            }
+                            else
+                            {
+                                lblHardwareMessage.Visible = false;
+                                hardwareLineCounter = 0;
+                            }
+                            break;
+                        }
+                    case 222: // 0xDE
+                        {
+                            //{ 0x80, 0x81, 0x7f, 222, number bytes, mask, command CRC };
+                            if (data.Length < 6) break;
+                            if (((data[5] & 1) == 1)) //mask bit #0 set and command bit #0 nudge line to the 0 = left 1 = right
+                            {
+                                double dist = Properties.Settings.Default.setAS_snapDistance * 0.01;
+                                if ((data[6] & 1) != 1) { trk.NudgeTrack(-dist); }
+                                if ((data[6] & 1) == 1) { trk.NudgeTrack(dist); }
+                            }
+                            if (((data[5] & 2) == 2)) //mask bit #1 set and command bit #0 cycle line to the 0 = left 1 = right
+                            {
+                                if ((data[6] & 1) != 1) {  btnCycleLines.PerformClick(); }
+                                if ((data[6] & 1) == 1) { btnCycleLinesBk.PerformClick(); }
+                            }
+                           
+                            break;
+                        }
+
 
                     #region Remote Switches
                     case 234://MTZ8302 Feb 2020
@@ -358,10 +394,12 @@ namespace AgOpenGPS
                 loopBackSocket.Bind(new IPEndPoint(IPAddress.Loopback, 15555));
                 loopBackSocket.BeginReceiveFrom(loopBuffer, 0, loopBuffer.Length, SocketFlags.None,
                     ref endPointLoopBack, new AsyncCallback(ReceiveAppData), null);
+                Log.EventWriter("UDP Loopback network started: " + IPAddress.Loopback.ToString() + ":" + "15555");
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Load Error: " + ex.Message, "UDP Server", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Log.EventWriter("Catch -> Load UDP Loopback Error: " + ex.ToString());
             }
         }
 
@@ -487,10 +525,10 @@ namespace AgOpenGPS
                     loopBackSocket.BeginSendTo(byteData, 0, byteData.Length, SocketFlags.None,
                         epAgIO, new AsyncCallback(SendAsyncLoopData), null);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    //WriteErrorLog("Sending UDP Message" + e.ToString());
-                    MessageBox.Show("Send Error: " + e.Message, "UDP Client", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    //Log.EventWriter("Sending UDP Message" + e.ToString());
+                    //MessageBox.Show("Send Error: " + e.Message, "UDP Client", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
@@ -573,6 +611,7 @@ namespace AgOpenGPS
             if ((char)keyData == hotkeys[0]) //autosteer button on off
             {
                 btnAutoSteer.PerformClick();
+                if (!isBtnAutoSteerOn) TimedMessageBox(2000, gStr.gsGuidanceStopped, "Hotkey Triggered");
                 return true;    // indicate that you handled this keystroke
             }
 
@@ -632,7 +671,7 @@ namespace AgOpenGPS
 
             if ((char)keyData == (hotkeys[9])) //open the vehicle Settings
             {
-                btnConfig.PerformClick();
+                toolStripConfig.PerformClick();
                 return true;    // indicate that you handled this keystroke
             }
 
@@ -751,8 +790,10 @@ namespace AgOpenGPS
                 sim.headingTrue += Math.PI;
                 ABLine.isABValid = false;
                 curve.isCurveValid = false;
-                curve.lastHowManyPathsAway = 98888;
-                if (isBtnAutoSteerOn) btnAutoSteer.PerformClick();
+                if (isBtnAutoSteerOn)
+                {
+                    btnAutoYouTurn.PerformClick();
+                }
             }
 
             //speed up
@@ -784,7 +825,7 @@ namespace AgOpenGPS
             //turn right
             if (keyData == Keys.Right)
             {
-                sim.steerAngle += 2;
+                sim.steerAngle += 1.0;
                 if (sim.steerAngle > 40) sim.steerAngle = 40;
                 if (sim.steerAngle < -40) sim.steerAngle = -40;
                 sim.steerAngleScrollBar = sim.steerAngle;
@@ -796,7 +837,7 @@ namespace AgOpenGPS
             //turn left
             if (keyData == Keys.Left)
             {
-                sim.steerAngle -= 2;
+                sim.steerAngle -= 1.0;
                 if (sim.steerAngle > 40) sim.steerAngle = 40;
                 if (sim.steerAngle < -40) sim.steerAngle = -40;
                 sim.steerAngleScrollBar = sim.steerAngle;
@@ -1023,7 +1064,7 @@ namespace AgOpenGPS
         //        //        bool bResult = SetGestureConfig(
         //        //            Handle, // window for which configuration is specified
         //        //            0,      // reserved, must be 0
-        //        //            1,      // count of GESTURECONFIG structures
+        //        //            1,      // countExit of GESTURECONFIG structures
         //        //            ref gc, // array of GESTURECONFIG structures, dwIDs
         //        //                    // will be processed in the order specified
         //        //                    // and repeated occurances will overwrite

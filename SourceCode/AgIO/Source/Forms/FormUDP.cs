@@ -5,6 +5,8 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Windows.Forms;
+using AgIO.Controls;
+using AgLibrary.Logging;
 
 namespace AgIO
 {
@@ -116,6 +118,7 @@ namespace AgIO
                 ScanNetwork();
                 tickCounter = 0;
                 lblSubTimer.Text = "Scanning";
+                //FillNudsWithScan();
             }
             else
             {
@@ -153,17 +156,19 @@ namespace AgIO
                                 {
                                     var properties = nic.GetIPStatistics();
                                     tboxNets.Text +=
-                                            info.Address + "  - " + nic.OperationalStatus + "\r\n";
+                                            info.Address + "  - " + nic.OperationalStatus + "\r\n";                                            
 
-                                    tboxNets.Text += nic.Name.ToString() + "\r\n";
-                                    tboxNets.Text += "Sent: " + (properties.NonUnicastPacketsSent
+                                    tboxNets.Text += info.IPv4Mask.ToString() + "  " + nic.Name.ToString() + "\r\n";
+                                    tboxNets.Text += 
+                                        "->" + (properties.NonUnicastPacketsSent 
                                         + properties.UnicastPacketsSent).ToString()
-                                        + "   Recd: " + (properties.NonUnicastPacketsReceived
-                                        + properties.UnicastPacketsReceived).ToString() + "\r\n\r\n";
+
+                                        + "  <-" + (properties.NonUnicastPacketsReceived
+                                        + properties.UnicastPacketsReceived).ToString() + "\r\n"                                 
+                                        + "\r\n";
                                 }
 
-                                if (nic.OperationalStatus == OperationalStatus.Up
-                                    && info.IPv4Mask != null)
+                                if (nic.OperationalStatus == OperationalStatus.Up && info.IPv4Mask != null)
                                 {
                                     byte[] data = info.Address.GetAddressBytes();
                                     if (data[0] == ipCurrent[0] && data[1] == ipCurrent[1] && data[2] == ipCurrent[2])
@@ -184,8 +189,7 @@ namespace AgIO
                                     }
                                     catch (Exception ex)
                                     {
-                                        Console.Write("Bind Error = ");
-                                        Console.WriteLine(ex.ToString());
+                                        Log.EventWriter("Catch - > Socket Bind Error Scan UDP" + ex.ToString());
                                     }
 
                                     scanSocket.Dispose();
@@ -193,8 +197,7 @@ namespace AgIO
                             }
                             catch (Exception ex)
                             {
-                                Console.Write("nic Loop = ");
-                                Console.WriteLine(ex.ToString());
+                                Log.EventWriter("Catch - > Nic Loop exception in Scan" + ex.ToString());
                             }
                         }
                     }
@@ -250,8 +253,7 @@ namespace AgIO
                                         }
                                         catch (Exception ex)
                                         {
-                                            Console.Write("Bind Error = ");
-                                            Console.WriteLine(ex.ToString());
+                                            Log.EventWriter("Catch - > Send Subnet Bind and Send: " + ex.ToString());
                                         }
 
                                         scanSocket.Dispose();
@@ -259,8 +261,7 @@ namespace AgIO
                                 }
                                 catch (Exception ex)
                                 {
-                                    Console.Write("nic Loop = ");
-                                    Console.WriteLine(ex.ToString());
+                                    Log.EventWriter("Catch - > Nic Loop Send Subnet: " + ex.ToString());
                                 }
                             }
                         }
@@ -286,23 +287,13 @@ namespace AgIO
 
             pboxSendSteer.Visible = false;
             btnSerialCancel.Image = Properties.Resources.back_button;
-        }
 
-        private void btnAutoSet_Click(object sender, EventArgs e)
-        {
-            nudFirstIP.Value = mf.scanReply.subnet[0];
-            nudSecndIP.Value = mf.scanReply.subnet[1];
-            nudThirdIP.Value = mf.scanReply.subnet[2];
-            ipNew[0] = mf.scanReply.subnet[0];
-            ipNew[1] = mf.scanReply.subnet[1];
-            ipNew[2] = mf.scanReply.subnet[2];
-            btnSerialCancel.Image = Properties.Resources.Cancel64;
-            pboxSendSteer.Visible = true;
+            Log.EventWriter("Subnet Uploaded: " + lblNetworkHelp.Text);
         }
 
         private void nudFirstIP_Click(object sender, EventArgs e)
         {
-            mf.KeypadToNUD((NumericUpDown)sender, this);
+            ((NumericUpDown)sender).ShowKeypad(this);
             ipNew[0] = (byte)nudFirstIP.Value;
             ipNew[1] = (byte)nudSecndIP.Value;
             ipNew[2] = (byte)nudThirdIP.Value;
@@ -340,7 +331,34 @@ namespace AgIO
 
         private void btnSerialMonitor_Click(object sender, EventArgs e)
         {
-            mf.ShowSerialMonitor();
+            mf.ShowUDPMonitor();
+        }
+
+        private void btnUDPOff_Click(object sender, EventArgs e)
+        {
+            Properties.Settings.Default.setUDP_isOn = false;
+            Properties.Settings.Default.setUDP_isSendNMEAToUDP = false;
+
+            Properties.Settings.Default.Save();
+
+            mf.YesMessageBox("AgIO will Restart to Disable UDP Networking Features");
+            Log.EventWriter("Program Reset: Turning UDP OFF");
+
+            Program.Restart();
+
+            Close();
+        }
+
+        private void btnAutoSet_Click(object sender, EventArgs e)
+        {
+            nudFirstIP.Value = mf.scanReply.subnet[0];
+            nudSecndIP.Value = mf.scanReply.subnet[1];
+            nudThirdIP.Value = mf.scanReply.subnet[2];
+            ipNew[0] = mf.scanReply.subnet[0];
+            ipNew[1] = mf.scanReply.subnet[1];
+            ipNew[2] = mf.scanReply.subnet[2];
+            btnSerialCancel.Image = Properties.Resources.Cancel64;
+            pboxSendSteer.Visible = true;
         }
 
         private void autoSelectNetworkCheckbox_CheckedChanged(object sender, EventArgs e)

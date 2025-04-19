@@ -1,7 +1,10 @@
 ﻿using AgIO.Properties;
+using AgLibrary.Logging;
+using Microsoft.Win32;
 using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -70,12 +73,6 @@ namespace AgIO
 
         public int focusSkipCounter = 310;
 
-        //The base directory where Drive will be stored and fields and vehicles branch from
-        public string baseDirectory;
-
-        //current directory of Comm storage
-        public string commDirectory, commFileName = "";
-
         public FormLoop()
         {
             InitializeComponent();
@@ -84,18 +81,10 @@ namespace AgIO
         //First run
         private void FormLoop_Load(object sender, EventArgs e)
         {
-            if (Settings.Default.setF_workingDirectory == "Default")
-                baseDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\AgOpenGPS\\";
-            else baseDirectory = Settings.Default.setF_workingDirectory + "\\AgOpenGPS\\";
-
-            //get the fields directory, if not exist, create
-            commDirectory = baseDirectory + "AgIO\\";
-            string dir = Path.GetDirectoryName(commDirectory);
-            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) { Directory.CreateDirectory(dir); }
-
             if (Settings.Default.setUDP_isOn)
             {
                 LoadUDPNetwork();
+                Log.EventWriter("UDP Network Is On");
             }
             else
             {
@@ -204,6 +193,7 @@ namespace AgIO
             isConnectedSteer = cboxIsSteerModule.Checked = Properties.Settings.Default.setMod_isSteerConnected;
             isConnectedMachine = cboxIsMachineModule.Checked = Properties.Settings.Default.setMod_isMachineConnected;
 
+            //On or off the module rows
             SetModulesOnOff();
 
             oneSecondLoopTimer.Enabled = true;
@@ -213,10 +203,7 @@ namespace AgIO
             pictureBox1.Height = 500;
             pictureBox1.Left = 0;
             pictureBox1.Top = 0;
-            //pictureBox1.Dock = DockStyle.Fill;
-
-            //On or off the module rows
-            SetModulesOnOff();
+            //pictureBox1.Dock = DockStyle.Fill;:
 
             //update Caster IP from URL, just use the old one if can't find
             if (isNTRIP_RequiredOn)
@@ -241,8 +228,9 @@ namespace AgIO
 
                     if (broadCasterIP == null) throw new NullReferenceException();
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    Log.EventWriter(ex.ToString());
                     TimedMessageBox(1500, "URL Not Located, Network Down?", "Cannot Find: " + Properties.Settings.Default.setNTRIP_casterURL);
                     //if we had a timer already, kill it
                     tmr?.Dispose();
@@ -266,54 +254,39 @@ namespace AgIO
                     return;
                 }
             }
-        }
 
-        public void SetModulesOnOff()
-        {
-            if (isConnectedIMU)
-            {
-                btnIMU.Visible = true;
-                lblIMUComm.Visible = true;
-                cboxIsIMUModule.BackgroundImage = Properties.Resources.Cancel64;
-            }
-            else
-            {
-                btnIMU.Visible = false;
-                lblIMUComm.Visible = false;
-                cboxIsIMUModule.BackgroundImage = Properties.Resources.AddNew;
-            }
+            //run gps_out or not
+            cboxAutoRunGPS_Out.Checked = Properties.Settings.Default.setDisplay_isAutoRunGPS_Out;
+            
+            this.Text =
+            "AgIO  v" + Program.Version + " Profile: " + RegistrySettings.profileName;
 
-            if (isConnectedMachine)
+            if (RegistrySettings.profileName == "")
             {
-                btnMachine.Visible = true;
-                lblMod2Comm.Visible = true;
-                cboxIsMachineModule.BackgroundImage = Properties.Resources.Cancel64;
-            }
-            else
-            {
-                btnMachine.Visible = false;
-                lblMod2Comm.Visible = false;
-                cboxIsMachineModule.BackgroundImage = Properties.Resources.AddNew;
+                Log.EventWriter("Using Default Profile At Start Warning");
+
+                YesMessageBox("AgIO - No Profile Open \r\n\r\n Create or Open a Profile");
+
+                using (var form = new FormProfiles(this))
+                {
+                    form.ShowDialog(this);
+                    if (form.DialogResult == DialogResult.Yes)
+                    {
+                        Log.EventWriter("Program Reset: Saving or Selecting Profile");
+
+                        Program.Restart();
+                    }
+                }
+                this.Text = "AgIO  v" + Program.Version + " Profile: "
+                    + RegistrySettings.profileName;
             }
 
-            if (isConnectedSteer)
+            if (Properties.Settings.Default.setDisplay_isAutoRunGPS_Out)
             {
-                btnSteer.Visible = true;
-                lblMod1Comm.Visible = true;
-                cboxIsSteerModule.BackgroundImage = Properties.Resources.Cancel64;
-            }
-            else
-            {
-                btnSteer.Visible = false;
-                lblMod1Comm.Visible = false;
-                cboxIsSteerModule.BackgroundImage = Properties.Resources.AddNew;
+                StartGPS_Out();
+                Log.EventWriter("Run GPS_Out");
             }
 
-            Properties.Settings.Default.setMod_isIMUConnected = isConnectedIMU;
-            Properties.Settings.Default.setMod_isSteerConnected = isConnectedSteer;
-            Properties.Settings.Default.setMod_isMachineConnected = isConnectedMachine;
-
-            Properties.Settings.Default.Save();
         }
 
         private void FormLoop_FormClosing(object sender, FormClosingEventArgs e)
@@ -343,6 +316,17 @@ namespace AgIO
                 }
                 finally { UDPSocket.Close(); }
             }
+
+            Process[] processName = Process.GetProcessesByName("GPS_Out");
+            if (processName.Length != 0)
+            {
+                processName[0].CloseMainWindow();
+            }
+
+            Log.EventWriter("Program Exit: " +
+                DateTime.Now.ToString("f", CultureInfo.InvariantCulture) + "\n\r");
+
+            Log.FileSaveSystemEvents();
         }
 
         private void oneSecondLoopTimer_Tick(object sender, EventArgs e)
@@ -353,7 +337,7 @@ namespace AgIO
                 pictureBox1.Dispose();
                 oneSecondLoopTimer.Interval = 1000;
                 this.Width = 428;
-                this.Height = 500;
+                this.Height = 530;
                 return;
             }
 
@@ -430,7 +414,6 @@ namespace AgIO
                     sbRTCM.Append(".");
                     lblMessages.Text = sbRTCM.ToString();
                 }
-                btnResetTimer.Text = ((int)(180 - (secondsSinceStart - threeMinuteTimer))).ToString();
             }
 
             if (focusSkipCounter != 0)
@@ -541,6 +524,7 @@ namespace AgIO
                     {
                         sbRTCM.Clear();
                         sbRTCM.Append("Error");
+                        Log.EventWriter("RTCM List compilation error");
                     }
                 }
 
@@ -587,34 +571,6 @@ namespace AgIO
                 }
 
                 #endregion Serial update
-            }
-        }
-
-        private void btnSlide_Click(object sender, EventArgs e)
-        {
-            if (this.Width < 600)
-            {
-                this.Width = 750;
-                isViewAdvanced = true;
-                btnSlide.BackgroundImage = Properties.Resources.ArrowGrnLeft;
-                sbRTCM.Clear();
-                lblMessages.Text = "Reading...";
-                threeMinuteTimer = secondsSinceStart;
-                lblMessagesFound.Text = "-";
-                aList.Clear();
-                rList.Clear();
-            }
-            else
-            {
-                this.Width = 428;
-                isViewAdvanced = false;
-                btnSlide.BackgroundImage = Properties.Resources.ArrowGrnRight;
-                aList.Clear();
-                rList.Clear();
-                lblMessages.Text = "Reading...";
-                lblMessagesFound.Text = "-";
-                aList.Clear();
-                rList.Clear();
             }
         }
 
@@ -722,6 +678,60 @@ namespace AgIO
             //}
         }
 
+        public void SetModulesOnOff()
+        {
+            if (isConnectedIMU)
+            {
+                btnIMU.Visible = true;
+                lblIMUComm.Visible = true;
+                cboxIsIMUModule.BackgroundImage = Properties.Resources.Cancel64;
+            }
+            else
+            {
+                btnIMU.Visible = false;
+                lblIMUComm.Visible = false;
+                cboxIsIMUModule.BackgroundImage = Properties.Resources.AddNew;
+            }
+
+            if (isConnectedMachine)
+            {
+                btnMachine.Visible = true;
+                lblMod2Comm.Visible = true;
+                cboxIsMachineModule.BackgroundImage = Properties.Resources.Cancel64;
+            }
+            else
+            {
+                btnMachine.Visible = false;
+                lblMod2Comm.Visible = false;
+                cboxIsMachineModule.BackgroundImage = Properties.Resources.AddNew;
+            }
+
+            if (isConnectedSteer)
+            {
+                btnSteer.Visible = true;
+                lblMod1Comm.Visible = true;
+                cboxIsSteerModule.BackgroundImage = Properties.Resources.Cancel64;
+            }
+            else
+            {
+                btnSteer.Visible = false;
+                lblMod1Comm.Visible = false;
+                cboxIsSteerModule.BackgroundImage = Properties.Resources.AddNew;
+            }
+
+            if (cboxIsIMUModule.Checked != Properties.Settings.Default.setMod_isIMUConnected ||
+                cboxIsSteerModule.Checked != Properties.Settings.Default.setMod_isSteerConnected ||
+                cboxIsMachineModule.Checked != Properties.Settings.Default.setMod_isMachineConnected)
+            {
+
+                Properties.Settings.Default.setMod_isIMUConnected = isConnectedIMU;
+                Properties.Settings.Default.setMod_isSteerConnected = isConnectedSteer;
+                Properties.Settings.Default.setMod_isMachineConnected = isConnectedMachine;
+
+                Properties.Settings.Default.Save();
+            }
+        }
+
         private void DoTraffic()
         {
             traffic.helloFromMachine++;
@@ -759,201 +769,5 @@ namespace AgIO
             }
         }
 
-        private void deviceManagerToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            Process.Start("devmgmt.msc");
-        }
-
-        private void cboxIsSteerModule_Click(object sender, EventArgs e)
-        {
-            isConnectedSteer = cboxIsSteerModule.Checked;
-            SetModulesOnOff();
-        }
-
-        private void cboxIsMachineModule_Click(object sender, EventArgs e)
-        {
-            isConnectedMachine = cboxIsMachineModule.Checked;
-            SetModulesOnOff();
-        }
-
-        private void lblMessages_Click(object sender, EventArgs e)
-        {
-            aList?.Clear();
-            sbRTCM.Clear();
-            sbRTCM.Append("Reset..");
-        }
-
-        private void btnResetTimer_Click(object sender, EventArgs e)
-        {
-            threeMinuteTimer = secondsSinceStart;
-        }
-
-        private void serialPassThroughToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (isRadio_RequiredOn)
-            {
-                TimedMessageBox(2000, "Radio NTRIP ON", "Turn it off before using Serial Pass Thru");
-                return;
-            }
-
-            if (isNTRIP_RequiredOn)
-            {
-                TimedMessageBox(2000, "Air NTRIP ON", "Turn it off before using Serial Pass Thru");
-                return;
-            }
-
-            using (var form = new FormSerialPass(this))
-            {
-                if (form.ShowDialog(this) == DialogResult.OK)
-                {
-                    ////Clicked Save
-                    //Application.Restart();
-                    //Environment.Exit(0);
-                }
-            }
-        }
-
-        private void lblIP_Click(object sender, EventArgs e)
-        {
-            lblIP.Text = "";
-            foreach (IPAddress IPA in Dns.GetHostAddresses(Dns.GetHostName()))
-            {
-                if (IPA.AddressFamily == AddressFamily.InterNetwork)
-                {
-                    _ = IPA.ToString();
-                    lblIP.Text += IPA.ToString() + "\r\n";
-                }
-            }
-        }
-
-        private void toolStripMenuItem1_Click(object sender, EventArgs e)
-        {
-            //Save curent Settngs
-            using (var form = new FormCommSaver(this))
-            {
-                form.ShowDialog(this);
-            }
-        }
-
-        private void toolStripMenuItem2_Click(object sender, EventArgs e)
-        {
-            //Load new settings
-            using (var form = new FormCommPicker(this))
-            {
-                form.ShowDialog(this);
-                if (form.DialogResult == DialogResult.OK)
-                {
-                    Application.Restart();
-                    Environment.Exit(0);
-                }
-            }
-        }
-
-        private void btnGPSData_Click(object sender, EventArgs e)
-        {
-            Form f = Application.OpenForms["FormGPSData"];
-
-            if (f != null)
-            {
-                f.Focus();
-                f.Close();
-                isGPSSentencesOn = false;
-                return;
-            }
-
-            isGPSSentencesOn = true;
-
-            Form form = new FormGPSData(this);
-            form.Show(this);
-        }
-
-        private void toolStripEthernet_Click(object sender, EventArgs e)
-        {
-            SettingsEthernet();
-        }
-
-        private void btnHelp_Click(object sender, EventArgs e)
-        {
-            //System.Diagnostics.Process.Start(gStr.gsAgIOHelp);
-        }
-
-        private void lblNTRIPBytes_Click(object sender, EventArgs e)
-        {
-            tripBytes = 0;
-        }
-
-        private void cboxIsIMUModule_Click(object sender, EventArgs e)
-        {
-            isConnectedIMU = cboxIsIMUModule.Checked;
-            SetModulesOnOff();
-        }
-
-        private void btnBringUpCommSettings_Click(object sender, EventArgs e)
-        {
-            SettingsCommunicationGPS();
-            RescanPorts();
-        }
-
-        private void btnUDP_Click(object sender, EventArgs e)
-        {
-            if (!Settings.Default.setUDP_isOn) SettingsEthernet();
-            else SettingsUDP();
-        }
-
-        private void btnRunAOG_Click(object sender, EventArgs e)
-        {
-            StartAOG();
-        }
-
-        private void btnNTRIP_Click(object sender, EventArgs e)
-        {
-            SettingsNTRIP();
-        }
-
-        private void btnExit_Click(object sender, EventArgs e)
-        {
-            Close();
-        }
-
-        private void pictureBox2_Click(object sender, EventArgs e)
-        {
-        }
-
-        private void btnRadio_Click_1(object sender, EventArgs e)
-        {
-            SettingsRadio();
-        }
-
-        private void btnWindowsShutDown_Click(object sender, EventArgs e)
-        {
-            DialogResult result3 = MessageBox.Show("Shutdown Windows For Realz ?",
-                "For Sure For Sure ?",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question,
-                MessageBoxDefaultButton.Button2);
-
-            if (result3 == DialogResult.Yes)
-            {
-                Process.Start("shutdown", "/s /t 0");
-            }
-        }
-
-        private void toolStripGPSData_Click(object sender, EventArgs e)
-        {
-            Form f = Application.OpenForms["FormGPSData"];
-
-            if (f != null)
-            {
-                f.Focus();
-                f.Close();
-                isGPSSentencesOn = false;
-                return;
-            }
-
-            isGPSSentencesOn = true;
-
-            Form form = new FormGPSData(this);
-            form.Show(this);
-        }
     }
 }

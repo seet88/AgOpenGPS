@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO.Ports;
 using System.Collections.Generic;
 using System.Linq;
+using AgLibrary.Logging;
 
 // Declare the delegate prototype to send data back to the form
 delegate void UpdateRTCM_Data(byte[] data);
@@ -149,7 +150,6 @@ namespace AgIO
                 if (ntripCounter > 59) btnStartStopNtrip.Text = (ntripCounter >> 6) + " Min";
                 else if (ntripCounter < 60 && ntripCounter > 22) btnStartStopNtrip.Text = ntripCounter + " Secs";
                 else btnStartStopNtrip.Text = "In " + (Math.Abs(ntripCounter - 22)) + " secs";
-
             }
         }
 
@@ -246,10 +246,15 @@ namespace AgIO
                     // Connect to server non-Blocking method
                     clientSocket.Blocking = false;
                     clientSocket.BeginConnect(new IPEndPoint(IPAddress.Parse(broadCasterIP), broadCasterPort), new AsyncCallback(OnConnect), null);
+
+                    Log.EventWriter("NTRIP - IP: " + broadCasterIP.ToString() + ":" + broadCasterPort.ToString()
+                        + " To Port: " + toUDP_Port.ToString() + " Mount: " + mount);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     ReconnectRequest();
+                    Log.EventWriter("Catch - > NTRIP Reconnect Request: " + ex.ToString());
+
                     return;
                 }
 
@@ -284,6 +289,7 @@ namespace AgIO
                         isNTRIP_Connecting = false;
                         isNTRIP_Connected = false;
                         isRadio_RequiredOn = false;
+                        Log.EventWriter("Catch - > Error connecting to radio" + ex.ToString());
 
                         TimedMessageBox(2000, "Error connecting to radio", $"{ex.Message}");
                     }
@@ -324,6 +330,7 @@ namespace AgIO
                         isNTRIP_Connecting = false;
                         isNTRIP_Connected = false;
                         isSerialPass_RequiredOn = false;
+                        Log.EventWriter("Catch - > Serial Pass Radio: " + ex.ToString());
 
                         TimedMessageBox(2000, "Error connecting to Serial Pass", $"{ex.Message}");
                     }
@@ -387,7 +394,7 @@ namespace AgIO
 
                     //Build authorization string
                     string str = "GET /" + mount + " HTTP/" + htt + "\r\n";
-                    str += "User-Agent: NTRIP AgOpenGPSClient/20221020\r\n";
+                    str += "User-Agent: NTRIP AgOpenGPSClient/6.4\r\n";
                     str += "Authorization: Basic " + auth + "\r\n"; //This line can be removed if no authorization is needed
                                                                     //str += GGASentence; //this line can be removed if no position feedback is needed
                     str += "Accept: */*\r\nConnection: close\r\n";
@@ -405,9 +412,10 @@ namespace AgIO
                 isNTRIP_Starting = false;
                 isNTRIP_Connecting = false;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 ReconnectRequest();
+                Log.EventWriter("Catch - > NTRIP Send Authourization: " + ex.ToString());
             }
         }
 
@@ -560,8 +568,10 @@ namespace AgIO
                 Byte[] byteDateLine = Encoding.ASCII.GetBytes(str.ToCharArray());
                 clientSocket.Send(byteDateLine, byteDateLine.Length, 0);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Log.EventWriter("Catch - > Send GGA" + ex.ToString());
+
                 ReconnectRequest();
             }
         }
@@ -785,7 +795,7 @@ namespace AgIO
 
             else sbGGA.Append("1,");
 
-            sbGGA.Append(altitudeData.ToString("#.###", CultureInfo.InvariantCulture)).Append(',');
+            sbGGA.Append(altitudeData.ToString("0.###", CultureInfo.InvariantCulture)).Append(',');
             sbGGA.Append("M,");
             sbGGA.Append("46.4,M,");  //udulation
             sbGGA.Append(ageData.ToString("0.#", CultureInfo.InvariantCulture)).Append(','); //age

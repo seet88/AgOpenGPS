@@ -1,8 +1,10 @@
 ﻿//Please, if you use this, share the improvements
 
+using AgLibrary.Logging;
 using AgOpenGPS;
-using AgOpenGPS.Classes;
+using AgOpenGPS.Culture;
 using AgOpenGPS.Properties;
+using Microsoft.Win32;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
@@ -17,6 +19,8 @@ using System.Media;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Resources;
+using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace AgOpenGPS
@@ -42,20 +46,8 @@ namespace AgOpenGPS
         //How many headlands allowed
         public const int MAXHEADS = 6;
 
-        //The base directory where AgOpenGPS will be stored and fields and vehicles branch from
-        public string baseDirectory;
-
-        //current directory of vehicle
-        public string vehiclesDirectory, vehicleFileName = "";
-
-        //current directory of tools
-        public string toolsDirectory, toolFileName = "";
-
-        //current directory of Environments
-        public string envDirectory, envFileName = "";
-
-        //current fields and field directory
-        public string fieldsDirectory, currentFieldDirectory, displayFieldName;
+        //current fields
+        public string currentFieldDirectory, displayFieldName;
 
         private bool leftMouseDownOnOpenGL; //mousedown event in opengl window
         public int flagNumberPicked = 0;
@@ -64,15 +56,10 @@ namespace AgOpenGPS
         public bool isJobStarted = false, isBtnAutoSteerOn, isLidarBtnOn = true;
 
         //if we are saving a file
-        public bool isSavingFile = false, isLogNMEA = false;
+        public bool isSavingFile = false;
 
         //texture holders
         public uint[] texture;
-
-        //the currentversion of software
-        public string currentVersionStr, inoVersionStr;
-
-        public int inoVersionInt;
 
         //create instance of a stopwatch for timing of frames and NMEA hz determination
         private readonly Stopwatch swFrame = new Stopwatch();
@@ -122,7 +109,7 @@ namespace AgOpenGPS
         /// <summary>
         /// create the scene camera
         /// </summary>
-        public CCamera camera = new CCamera();
+        public CCamera camera;
 
         /// <summary>
         /// create world grid
@@ -206,11 +193,6 @@ namespace AgOpenGPS
         public CSim sim;
 
         /// <summary>
-        /// Resource manager for gloabal strings
-        /// </summary>
-        public ResourceManager _rm;
-
-        /// <summary>
         /// Heading, Roll, Pitch, GPS, Properties
         /// </summary>
         public CAHRS ahrs;
@@ -235,16 +217,6 @@ namespace AgOpenGPS
         /// </summary>
         public CFont font;
 
-        public ShapeFile shape;
-        /// <summary>
-        /// The new brightness code
-        /// </summary>
-
-        private void panelRight_Paint(object sender, PaintEventArgs e)
-        {
-
-        }
-
         /// <summary>
         /// The new steer algorithms
         /// </summary>
@@ -259,15 +231,50 @@ namespace AgOpenGPS
 
         #endregion // Class Props and instances
 
+        //The method assigned to the PowerModeChanged event call
+        private void SystemEvents_PowerModeChanged(object sender, Microsoft.Win32.PowerModeChangedEventArgs e)
+        {
+            //We are interested only in StatusChange cases
+            if (e.Mode.HasFlag(Microsoft.Win32.PowerModes.StatusChange))
+            {
+                PowerLineStatus powerLineStatus = SystemInformation.PowerStatus.PowerLineStatus;
+
+                Log.EventWriter($"Power Line Status Change to: {powerLineStatus}");
+
+                if (powerLineStatus == PowerLineStatus.Online)
+                {
+                    btnChargeStatus.BackColor = Color.YellowGreen;
+
+                    Form f = Application.OpenForms["FormSaveOrNot"];
+
+                    if (f != null)
+                    {
+                        f.Focus();
+                        f.Close();
+                    }
+                }
+                else
+                {
+                    btnChargeStatus.BackColor = Color.LightCoral;
+                }
+
+                if (Settings.Default.setDisplay_isShutdownWhenNoPower && powerLineStatus == PowerLineStatus.Offline)
+                {
+                    Log.EventWriter("Shutdown Computer By Power Lost Setting");
+                    Close();
+                }
+            }
+        }
+
         public FormGPS()
         {
             //winform initialization
             InitializeComponent();
 
-            CheckSettingsNotNull();
-
             //time keeper
             secondsSinceStart = (DateTime.Now - Process.GetCurrentProcess().StartTime).TotalSeconds;
+
+            camera = new CCamera();
 
             //create the world grid
             worldGrid = new CWorldGrid(this);
@@ -333,9 +340,6 @@ namespace AgOpenGPS
             //instance of tram
             tram = new CTram(this);
 
-            //resource for gloabal language strings
-            _rm = new ResourceManager("AgOpenGPS.gStr", Assembly.GetExecutingAssembly());
-
             //access to font class
             font = new CFont(this);
 
@@ -348,16 +352,38 @@ namespace AgOpenGPS
             //brightness object class
             displayBrightness = new CWindowsSettingsBrightnessController(Properties.Settings.Default.setDisplay_isBrightnessOn);
 
-            //shape file object
-            shape = new ShapeFile(this);
-
             //custom data sender
             customDataSender = new CCustomDataSender(this);
         }
 
         private void FormGPS_Load(object sender, EventArgs e)
         {
+            Log.EventWriter("Program Started: "
+                + DateTime.Now.ToString("f", CultureInfo.InvariantCulture));
+            Log.EventWriter("AOG Version: " + Application.ProductVersion.ToString(CultureInfo.InvariantCulture));
+
+            if (!Properties.Settings.Default.setDisplay_isTermsAccepted)
+            {
+                using (var form = new Form_First(this))
+                {
+                    if (form.ShowDialog(this) != DialogResult.OK)
+                    {
+                        Log.EventWriter("Terms Not Accepted");
+                        Log.FileSaveSystemEvents();
+                        Environment.Exit(0);
+                    }
+                    else
+                    {
+                        Log.EventWriter("Terms Accepted");
+                    }
+                }
+            }
+            else Log.EventWriter("Terms Already Accepted");
+
             this.MouseWheel += ZoomByMouseWheel;
+
+            //The way we subscribe to the System Event to check when Power Mode has changed.
+            Microsoft.Win32.SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
 
             //start udp server is required
             StartLoopbackServer();
@@ -371,56 +397,18 @@ namespace AgOpenGPS
             oglMain.Left = 75;
             oglMain.Width = this.Width - statusStripLeft.Width - 84;
 
-            panelSim.Left = Width/2 -330;
+            panelSim.Left = Width / 2 - 330;
             panelSim.Width = 700;
             panelSim.Top = Height - 60;
 
             //set the language to last used
-            SetLanguage(Settings.Default.setF_culture, false);
-
-            currentVersionStr = Application.ProductVersion.ToString(CultureInfo.InvariantCulture);
-
-            string[] fullVers = currentVersionStr.Split('.');
-            int inoV = int.Parse(fullVers[0], CultureInfo.InvariantCulture);
-            inoV += int.Parse(fullVers[1], CultureInfo.InvariantCulture);
-            inoV += int.Parse(fullVers[2], CultureInfo.InvariantCulture);
-            inoVersionInt = inoV;
-            inoVersionStr = inoV.ToString();
-
-            if (Settings.Default.setF_workingDirectory == "Default")
-                baseDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\AgOpenGPS\\";
-            else baseDirectory = Settings.Default.setF_workingDirectory + "\\AgOpenGPS\\";
-
-            //get the fields directory, if not exist, create
-            fieldsDirectory = baseDirectory + "Fields\\";
-            string dir = Path.GetDirectoryName(fieldsDirectory);
-            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) { Directory.CreateDirectory(dir); }
-
-            //get the fields directory, if not exist, create
-            vehiclesDirectory = baseDirectory + "Vehicles\\";
-            dir = Path.GetDirectoryName(vehiclesDirectory);
-            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) { Directory.CreateDirectory(dir); }
-
-            //get the abLines directory, if not exist, create
-            ablinesDirectory = baseDirectory + "ABLines\\";
-            dir = Path.GetDirectoryName(fieldsDirectory);
-            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) { Directory.CreateDirectory(dir); }
+            SetLanguage(RegistrySettings.culture);
 
             //make sure current field directory exists, null if not
             currentFieldDirectory = Settings.Default.setF_CurrentDir;
 
-            string curDir;
-            if (currentFieldDirectory != "")
-            {
-                curDir = fieldsDirectory + currentFieldDirectory + "//";
-                dir = Path.GetDirectoryName(curDir);
-                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-                {
-                    currentFieldDirectory = "";
-                    Settings.Default.setF_CurrentDir = "";
-                    Settings.Default.Save();
-                }
-            }
+            Log.EventWriter("Program Directory: " + Application.StartupPath);
+            Log.EventWriter("Fields Directory: " + (RegistrySettings.fieldsDirectory));
 
             if (isBrightnessOn)
             {
@@ -462,16 +450,14 @@ namespace AgOpenGPS
             oglZoom.Left = 100;
             oglZoom.Top = 100;
 
-            if (Properties.Settings.Default.setDisplay_isAutoStartAgIO)
+            if (RegistrySettings.vehicleFileName != "" && Properties.Settings.Default.setDisplay_isAutoStartAgIO)
             {
                 //Start AgIO process
                 Process[] processName = Process.GetProcessesByName("AgIO");
                 if (processName.Length == 0)
                 {
                     //Start application here
-                    DirectoryInfo di = new DirectoryInfo(Application.StartupPath);
-                    string strPath = di.ToString();
-                    strPath += "\\AgIO.exe";
+                    string strPath = Path.Combine(Application.StartupPath, "AgIO.exe");
                     try
                     {
                         ProcessStartInfo processInfo = new ProcessStartInfo
@@ -480,10 +466,12 @@ namespace AgOpenGPS
                             WorkingDirectory = Path.GetDirectoryName(strPath)
                         };
                         Process proc = Process.Start(processInfo);
+                        Log.EventWriter("AgIO Started");
                     }
                     catch
                     {
                         TimedMessageBox(2000, "No File Found", "Can't Find AgIO");
+                        Log.EventWriter("Can't Find AgIO, File not Found");
                     }
                 }
             }
@@ -493,55 +481,20 @@ namespace AgOpenGPS
 
             ControlExtension.Draggable(panelDrag, true);
 
-            setWorkingDirectoryToolStripMenuItem.Text = gStr.gsDirectories;
-            enterSimCoordsToolStripMenuItem.Text = gStr.gsEnterSimCoords;
-            aboutToolStripMenuItem.Text = gStr.gsAbout;
-            menustripLanguage.Text = gStr.gsLanguage;
-
-            simulatorOnToolStripMenuItem.Text = gStr.gsSimulatorOn;
-            resetALLToolStripMenuItem.Text = gStr.gsResetAll;
-            colorsToolStripMenuItem1.Text = gStr.gsColors;
-            resetEverythingToolStripMenuItem.Text = gStr.gsResetAllForSure;
-            steerChartStripMenu.Text = gStr.gsCharts;
-
-            //Tools Menu
-            SmoothABtoolStripMenu.Text = gStr.gsSmoothABCurve;
-            boundariesToolStripMenuItem.Text = gStr.gsBoundary;
-            headlandToolStripMenuItem.Text = gStr.gsHeadland;
-            headlandBuildToolStripMenuItem.Text = gStr.gsHeadland + " (2)";
-            deleteContourPathsToolStripMenuItem.Text = gStr.gsDeleteContourPaths;
-            deleteAppliedToolStripMenuItem.Text = gStr.gsDeleteAppliedArea;
-            tramLinesMenuField.Text = gStr.gsTramLines;
-            recordedPathStripMenu.Text = gStr.gsRecordedPathMenu;
-            flagByLatLonToolStripMenuItem.Text = gStr.gsFlagByLatLon;
-            boundaryToolToolStripMenu.Text = gStr.gsBoundary + " Tool";
-
-            webcamToolStrip.Text = gStr.gsWebCam;
-            offsetFixToolStrip.Text = gStr.gsOffsetFix;
-            wizardsMenu.Text = gStr.gsWizards;
-            steerWizardMenuItem.Text = gStr.gsSteerWizard;
-            steerChartToolStripMenuItem.Text = gStr.gsSteerChart;
-            headingChartToolStripMenuItem.Text = gStr.gsHeadingChart;
-            xTEChartToolStripMenuItem.Text = gStr.gsXTEChart;
-
-            btnChangeMappingColor.Text = Application.ProductVersion.ToString(CultureInfo.InvariantCulture);
-            //btnChangeMappingColor.Text = btnChangeMappingColor.Text.Substring(2);
-
             hotkeys = new char[19];
 
             hotkeys = Properties.Settings.Default.setKey_hotkeys.ToCharArray();
 
-            if (!isTermsAccepted)
+            if (RegistrySettings.vehicleFileName == "")
             {
-                if (!Properties.Settings.Default.setDisplay_isTermsAccepted)
+                Log.EventWriter("Using Default Vehicle At Start Warning");
+
+                YesMessageBox("Using Default Vehicle" + "\r\n\r\n" + "Load Existing Vehicle or Save As a New One !!!"
+                    + "\r\n\r\n" + "Changes will NOT be Saved for Default Vehicle");
+            
+                using (FormConfig form = new FormConfig(this))
                 {
-                    using (var form = new Form_First(this))
-                    {
-                        if (form.ShowDialog(this) != DialogResult.OK)
-                        {
-                            Close();
-                        }
-                    }
+                    form.ShowDialog(this);
                 }
             }
         }
@@ -573,10 +526,27 @@ namespace AgOpenGPS
                 f.Close();
             }
 
+            f = Application.OpenForms["FormTimedMessage"];
+
+            if (f != null)
+            {
+                f.Focus();
+                f.Close();
+            }
 
             if (this.OwnedForms.Any())
             {
                 TimedMessageBox(2000, gStr.gsWindowsStillOpen, gStr.gsCloseAllWindowsFirst);
+                e.Cancel = true;
+                return;
+            }
+
+            bool closing = true;
+            int choice = SaveOrNot(closing);
+
+            //simple cancel return to AOG
+            if (choice == 1)
+            {
                 e.Cancel = true;
                 return;
             }
@@ -589,48 +559,61 @@ namespace AgOpenGPS
                 if (manualBtnState == btnStates.On)
                     btnSectionMasterManual.PerformClick();
 
-                bool closing = true;
-                int choice = SaveOrNot(closing);
-
-                if (choice == 1)
-                {
-                    e.Cancel = true;
-                    return;
-                }
-
-                //Save, return, cancel save
-                if (isJobStarted)
-                {
-                    if (choice == 3)
-                    {
-                        e.Cancel = true;
-                        return;
-                    }
-                    else if (choice == 0)
-                    {
-                        FileSaveEverythingBeforeClosingField();
-                    }
-                }
+                FileSaveEverythingBeforeClosingField();
             }
 
             SaveFormGPSWindowSettings();
-            FileUpdateAllFieldsKML();
+
+            double minutesSinceStart = ((DateTime.Now - Process.GetCurrentProcess().StartTime).TotalSeconds) / 60;
+            if (minutesSinceStart < 1)
+            {
+                minutesSinceStart = 1;
+            }
+
+            Log.EventWriter("Missed Sentence Counter Total: " + missedSentenceCount.ToString()
+                + "   Missed Per Minute: " + ((double)missedSentenceCount / minutesSinceStart).ToString("N4"));
+
+            Log.EventWriter("Program Exit: " + DateTime.Now.ToString("f", CultureInfo.InvariantCulture) + "\r");
+
+            //save current vehicle
+            Settings.Default.Save();
+
+            //write the log file
+            Log.FileSaveSystemEvents();
+
+            if (displayBrightness.isWmiMonitor)
+                displayBrightness.SetBrightness(Settings.Default.setDisplay_brightnessSystem);
+
+            if (choice == 2)
+            {
+                Process[] processName = Process.GetProcessesByName("AgIO");
+                if (processName.Length != 0)
+                {
+                    processName[0].CloseMainWindow();
+                }
+
+                Process.Start("shutdown", "/s /t 0");
+            }
 
             if (loopBackSocket != null)
             {
                 try
                 {
                     loopBackSocket.Shutdown(SocketShutdown.Both);
+                    loopBackSocket.Close();
                 }
                 catch { }
-                finally { loopBackSocket.Close(); }
+                finally { }
             }
 
-            //save current vehicle
-            SettingsIO.ExportAll(vehiclesDirectory + vehicleFileName + ".XML");
-
-            if (displayBrightness.isWmiMonitor)
-                displayBrightness.SetBrightness(Settings.Default.setDisplay_brightnessSystem);
+            if (Properties.Settings.Default.setDisplay_isAutoOffAgIO)
+            {
+                Process[] processName = Process.GetProcessesByName("AgIO");
+                if (processName.Length != 0)
+                {
+                    processName[0].CloseMainWindow();
+                }
+            }
         }
 
         public int SaveOrNot(bool closing)
@@ -641,11 +624,11 @@ namespace AgOpenGPS
             {
                 DialogResult result = form.ShowDialog(this);
 
-                if (result == DialogResult.OK) return 0;      //Save and Exit
-                if (result == DialogResult.Ignore) return 1;   //Ignore
-                if (result == DialogResult.Yes) return 2;   //Ignore
+                if (result == DialogResult.OK) return 0;      //Exit to windows
+                if (result == DialogResult.Ignore) return 1;   //Ignore & return
+                if (result == DialogResult.Yes) return 2;   //Shutdown computer
 
-                return 3;  // oops something is really busted
+                return 1;  // oops something is really busted
             }
         }
 
@@ -671,30 +654,10 @@ namespace AgOpenGPS
             f = Application.OpenForms["FormPan"];
             if (f != null)
             {
-                f.Top = this.Top + 90;
-                f.Left = this.Left + 120;
+                f.Top = this.Height / 3 + this.Top;
+                f.Left = this.Width - 400 + this.Left;
             }
         }
-
-        // Return True if a certain percent of a rectangle is shown across the total screen area of all monitors, otherwise return False.
-        public bool IsOnScreen(System.Drawing.Point RecLocation, System.Drawing.Size RecSize, double MinPercentOnScreen = 0.8)
-        {
-            double PixelsVisible = 0;
-            System.Drawing.Rectangle Rec = new System.Drawing.Rectangle(RecLocation, RecSize);
-
-            foreach (Screen Scrn in Screen.AllScreens)
-            {
-                System.Drawing.Rectangle r = System.Drawing.Rectangle.Intersect(Rec, Scrn.WorkingArea);
-                // intersect rectangle with screen
-                if (r.Width != 0 & r.Height != 0)
-                {
-                    PixelsVisible += (r.Width * r.Height);
-                    // tally visible pixels
-                }
-            }
-            return PixelsVisible >= (Rec.Width * Rec.Height) * MinPercentOnScreen;
-        }
-
 
         private void FormGPS_Move(object sender, EventArgs e)
         {
@@ -720,14 +683,6 @@ namespace AgOpenGPS
             }
         }
 
-        public void CheckSettingsNotNull()
-        {
-            if (Settings.Default.setFeatures == null)
-            {
-                Settings.Default.setFeatures = new CFeatureSettings();
-            }
-        }
-
         public enum textures : uint
         {
             Floor, Font,
@@ -735,14 +690,13 @@ namespace AgOpenGPS
             Compass, Speedo, SpeedoNeedle,
             Lift, SteerPointer,
             SteerDot, Tractor, QuestionMark,
-            FrontWheels, FourWDFront, FourWDRear,
-            Harvester, 
-            Lateral, bingGrid, 
-            NoGPS, ZoomIn48, ZoomOut48, 
-            Pan, MenuHideShow, 
+            FrontWheels, ArticulatedFront, ArticulatedRear,
+            Harvester,
+            Lateral, bingGrid,
+            NoGPS, ZoomIn48, ZoomOut48,
+            Pan, MenuHideShow,
             ToolWheels, Tire, TramDot,
-            RateMap1, RateMap2, RateMap3, 
-            YouTurnU, YouTurnH
+            YouTurnU, YouTurnH, CrossTrackBkgrnd
         }
 
         public void LoadGLTextures()
@@ -756,15 +710,14 @@ namespace AgOpenGPS
                 Resources.z_Compass,Resources.z_Speedo,Resources.z_SpeedoNeedle,
                 Resources.z_Lift,Resources.z_SteerPointer,
                 Resources.z_SteerDot,GetTractorBrand(Settings.Default.setBrand_TBrand),Resources.z_QuestionMark,
-                Resources.z_FrontWheels,Get4WDBrandFront(Settings.Default.setBrand_WDBrand), 
-                Get4WDBrandRear(Settings.Default.setBrand_WDBrand),
-                GetHarvesterBrand(Settings.Default.setBrand_HBrand), 
-                Resources.z_LateralManual, Resources.z_bingMap, 
-                Resources.z_NoGPS, Resources.ZoomIn48, Resources.ZoomOut48, 
+                Resources.z_FrontWheels,GetArticulatedBrandFront(Settings.Default.setBrand_WDBrand),
+                GetArticulatedBrandRear(Settings.Default.setBrand_WDBrand),
+                GetHarvesterBrand(Settings.Default.setBrand_HBrand),
+                Resources.z_LateralManual, Resources.z_bingMap,
+                Resources.z_NoGPS, Resources.ZoomIn48, Resources.ZoomOut48,
                 Resources.Pan, Resources.MenuHideShow,
-                Resources.z_Tool, Resources.z_Tire, Resources.z_TramOnOff, 
-                Resources.z_RateMap1, Resources.z_RateMap2, Resources.z_RateMap3,
-                Resources.YouTurnU, Resources.YouTurnH
+                Resources.z_Tool, Resources.z_Tire, Resources.z_TramOnOff,
+                Resources.YouTurnU, Resources.YouTurnH, Resources.z_crossTrackBkgnd
             };
 
             texture = new uint[oglTextures.Length];
@@ -782,43 +735,6 @@ namespace AgOpenGPS
                     GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, 9729);
                 }
             }
-        }
-
-        public bool KeypadToNUD(NudlessNumericUpDown sender, Form owner)
-        {
-            var colour = sender.BackColor;
-            sender.BackColor = Color.Red;
-            sender.Value = Math.Round(sender.Value, sender.DecimalPlaces);
-
-            using (FormNumeric form = new FormNumeric((double)sender.Minimum, (double)sender.Maximum, (double)sender.Value))
-            {
-                DialogResult result = form.ShowDialog(owner);
-                if (result == DialogResult.OK)
-                {
-                    sender.Value = (decimal)form.ReturnValue;
-                    sender.BackColor = colour;
-                    return true;
-                }
-                else if (result == DialogResult.Cancel)
-                {
-                    sender.BackColor = colour;
-                }
-                return false;
-            }
-        }
-
-        public void KeyboardToText(TextBox sender, Form owner)
-        {
-            var colour = sender.BackColor;
-            sender.BackColor = Color.Red;
-            using (FormKeyboard form = new FormKeyboard(sender.Text))
-            {
-                if (form.ShowDialog(owner) == DialogResult.OK)
-                {
-                    sender.Text = form.ReturnString;
-                }
-            }
-            sender.BackColor = colour;
         }
 
         //request a new job
@@ -921,8 +837,10 @@ namespace AgOpenGPS
             PanelUpdateRightAndBottom();
             PanelsAndOGLSize();
             SetZoom();
+
             fileSaveCounter = 25;
             lblGuidanceLine.Visible = false;
+            lblHardwareMessage.Visible = false;
             btnAutoTrack.Image = Resources.AutoTrackOff;
             trk.isAutoTrack = false;
         }
@@ -957,15 +875,16 @@ namespace AgOpenGPS
             vehicle.isHydLiftOn = false;
             btnHydLift.Image = Properties.Resources.HydraulicLiftOff;
             btnHydLift.Visible = false;
+            lblHardwareMessage.Visible = false;
 
             lblGuidanceLine.Visible = false;
+            lblHardwareMessage.Visible = false;
 
             //zoom gone
             oglZoom.SendToBack();
 
             //clean all the lines
             bnd.bndList.Clear();
-            bnd.shpList.Clear();
 
             panelRight.Enabled = false;
             FieldMenuButtonEnableDisable(false);
@@ -1066,7 +985,7 @@ namespace AgOpenGPS
 
             //curve line
             curve.ResetCurveLine();
-            
+
             //tracks
             trk.gArr?.Clear();
             trk.idx = -1;
@@ -1117,17 +1036,18 @@ namespace AgOpenGPS
             recPath.recList?.Clear();
             recPath.shortestDubinsList?.Clear();
             recPath.shuttleDubinsList?.Clear();
-            
+
             isPanelBottomHidden = false;
 
             PanelsAndOGLSize();
             SetZoom();
             worldGrid.isGeoMap = false;
-            worldGrid.isRateMap = false;
 
             panelSim.Top = Height - 60;
 
             PanelUpdateRightAndBottom();
+
+            btnSection1Man.Text = "1";
 
             using (Bitmap bitmap = Properties.Resources.z_bingMap)
             {
@@ -1147,13 +1067,13 @@ namespace AgOpenGPS
             deleteContourPathsToolStripMenuItem.Enabled = isOn;
             boundaryToolToolStripMenu.Enabled = isOn;
             offsetFixToolStrip.Enabled = isOn;
-            appMapToolStripMenu.Enabled = isOn;
 
             boundariesToolStripMenuItem.Enabled = isOn;
             headlandToolStripMenuItem.Enabled = isOn;
             headlandBuildToolStripMenuItem.Enabled = isOn;
             flagByLatLonToolStripMenuItem.Enabled = isOn;
             tramLinesMenuField.Enabled = isOn;
+            tramsMultiMenuField.Enabled = isOn;
             recordedPathStripMenu.Enabled = isOn;
         }
 
@@ -1175,31 +1095,12 @@ namespace AgOpenGPS
             GL.MatrixMode(MatrixMode.Modelview);
         }
 
-        //All the files that need to be saved when closing field or app
-        //an error log called by all try catches
-        public void WriteErrorLog(string strErrorText)
-        {
-            try
-            {
-                //set up file and folder if it doesn't exist
-                const string strFileName = "Error Log.txt";
-                //string strPath = Application.StartupPath;
-
-                //Write out the error appending to existing
-                File.AppendAllText(baseDirectory + "\\" + strFileName, strErrorText + " - " +
-                    DateTime.Now.ToString() + "\r\n\r\n");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error in WriteErrorLog: " + ex.Message, "Error Logging", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-            }
-        }
-
         //message box pops up with info then goes away
         public void TimedMessageBox(int timeout, string s1, string s2)
         {
             FormTimedMessage form = new FormTimedMessage(timeout, s1, s2);
             form.Show(this);
+            this.Activate();
         }
 
         public void YesMessageBox(string s1)

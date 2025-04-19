@@ -94,11 +94,11 @@ namespace AgOpenGPS
             temp -= ((int)(temp));
             temp *= 100;
             mf.pn.altitude += temp;
-
             
             mf.pn.satellitesTracked = 12;
 
             mf.sentenceCounter = 0;
+
             mf.UpdateFixPosition();
 
             if (isAccelForward)
