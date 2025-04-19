@@ -349,10 +349,11 @@ namespace AgOpenGPS
         {
             if (idx >= 0)
             {
+                
                 Object obj = new
                 {
-                    pointA = CastVectPositionToObj(gArr[idx].ptA),
-                    pointB = CastVectPositionToObj(gArr[idx].ptB),
+                    pointA = CastVectPositionToObj(mf.ABLine.currentLinePtA),
+                    pointB = CastVectPositionToObj(mf.ABLine.currentLinePtB),
                 };
                 string message = JsonSerializer.Serialize(new { msgType = "currentABLine", value = obj });
                 var z = message.Length;

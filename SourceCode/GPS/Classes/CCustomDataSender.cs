@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Text.Json;
 
 namespace AgOpenGPS.Classes
 {
@@ -24,6 +25,8 @@ namespace AgOpenGPS.Classes
         private string traccarClientId = "";
 
         private string topic = "test1";
+        private string subTopic = "customCommnads";
+
 
         IMqttClient mqttClient;
 
@@ -86,19 +89,24 @@ namespace AgOpenGPS.Classes
             }
 
             // Subscribe to a topic
-            await mqttClient.SubscribeAsync(topic);
+            await mqttClient.SubscribeAsync(subTopic);
             Console.WriteLine("Subscribed to topic 'test/topic'. Waiting for messages...");
             mqttClient.ApplicationMessageReceivedAsync += e =>
             {
                 var z = e.ApplicationMessage.PayloadSegment.Array;
+                if (z == null) return Task.CompletedTask;
                 Debug.WriteLine($"Received message: {Encoding.UTF8.GetString(z)}");
                 return Task.CompletedTask;
             };
 
+
+            string messagePayload = JsonSerializer.Serialize(new { msgType = "hello", value = "Hello from AgOpenGPS" });
+
+
             // Publish a message to the topic
             var message = new MQTTnet.MqttApplicationMessageBuilder()
                 .WithTopic(topic)
-                .WithPayload("Hello MQTT with credentials!")
+                .WithPayload(messagePayload)
                 .Build();
             await mqttClient.PublishAsync(message);
             Console.WriteLine("Message sent to topic 'test/topic'.");

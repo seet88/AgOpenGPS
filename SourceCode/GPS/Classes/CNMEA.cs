@@ -115,7 +115,8 @@ namespace AgOpenGPS
         
         public void SendMsgLocalGPSStaticValues()
         {
-            mf.SendCustomData(this.CreateMsgLocalGPSStaticValues());
+            //mf.SendCustomData(this.CreateMsgLocalGPSStaticValues());
+            mf.customDataSender.SendDataViaMQTT(this.CreateMsgLocalGPSStaticValues());
         }
     }
 }

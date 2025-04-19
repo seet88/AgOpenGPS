@@ -223,7 +223,8 @@ namespace AgOpenGPS
 
         public void SendMsgLocalBoundaryValues()
         {
-            mf.SendCustomData(this.CreateMsgLocalBoundry());
+            //mf.SendCustomData(this.CreateMsgLocalBoundry());
+            mf.customDataSender.SendDataViaMQTT(this.CreateMsgLocalBoundry());
         }
     }
 }
