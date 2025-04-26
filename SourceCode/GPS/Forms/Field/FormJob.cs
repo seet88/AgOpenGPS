@@ -289,5 +289,16 @@ namespace AgOpenGPS
                 //}
             }
         }
+
+        private void btnNewFieldCustom_Click(object sender, EventArgs e)
+        {
+
+            Debug.WriteLine("hello btnNewFieldCustom_Click");
+            mf.isCreateNewFieldCustom = true;
+            //back to FormGPS
+            DialogResult = DialogResult.Yes;
+            Close();
+        }
+
     }
 }
