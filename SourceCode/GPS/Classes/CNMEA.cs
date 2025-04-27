@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using static System.Collections.Specialized.BitVector32;
 using System.Text.Json;
+using AgOpenGPS.Classes;
 
 namespace AgOpenGPS
 {
@@ -107,7 +108,7 @@ namespace AgOpenGPS
                 latStart = latStart,
             };
 
-            string message = JsonSerializer.Serialize(new { msgType = "localCordsToGPSStatics", value = obj });
+            string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.localCordsToGPSStatics, value = obj, timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
 
 
             return message;

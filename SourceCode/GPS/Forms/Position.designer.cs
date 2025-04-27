@@ -1,5 +1,6 @@
 ﻿//Please, if you use this, share the improvements
 
+using AgOpenGPS.Classes;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -1531,7 +1532,8 @@ namespace AgOpenGPS
                 speed = this.SpeedKPH,
             };
 
-            string message = JsonSerializer.Serialize(new { msgType = "sectionsInfo", value = obj });
+            //string message = JsonSerializer.Serialize(new { msgType = "sectionsInfo", value = obj });
+            string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.sectionsInfo, value = obj, timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
 
             return message;
         }

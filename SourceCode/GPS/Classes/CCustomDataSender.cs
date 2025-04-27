@@ -95,12 +95,14 @@ namespace AgOpenGPS.Classes
             {
                 var z = e.ApplicationMessage.PayloadSegment.Array;
                 if (z == null) return Task.CompletedTask;
-                Debug.WriteLine($"Received message: {Encoding.UTF8.GetString(z)}");
+                var payload = Encoding.UTF8.GetString(z);
+                Debug.WriteLine($"Received message: {payload}");
+                MqttMessage obj = JsonSerializer.Deserialize<MqttMessage>(payload);
                 return Task.CompletedTask;
             };
 
 
-            string messagePayload = JsonSerializer.Serialize(new { msgType = "hello", value = "Hello from AgOpenGPS" });
+            string messagePayload = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.hello, value = "Hello from AgOpenGPS", timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
 
 
             // Publish a message to the topic
@@ -144,5 +146,23 @@ namespace AgOpenGPS.Classes
 
 
 
+    }
+
+    public enum MQTTMessageType
+    {
+        currentABLine,
+        sectionsInfo,
+        currentCurveLine,
+        localCordsToGPSStatics,
+        boundary,
+        hello
+    }
+
+    public class MqttMessage
+    {
+        public MQTTMessageType msgType { get; set; }
+        public object value { get; set; }
+        public string timestamp { get; set; }
+        public string clientName { get; set; }
     }
 }

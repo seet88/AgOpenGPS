@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AgOpenGPS.Classes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -214,7 +215,8 @@ namespace AgOpenGPS
                         //turn = b.turnLine.Select(CastVectPositionToObj),
                     }),
                 };
-                string message = JsonSerializer.Serialize(new { msgType = "boundary", value = obj });
+                //string message = JsonSerializer.Serialize(new { msgType = "boundary", value = obj });
+                string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.boundary, value = obj, timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
                 var z = message.Length;
                 return message;
             }

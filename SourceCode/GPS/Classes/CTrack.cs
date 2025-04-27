@@ -1,4 +1,5 @@
-﻿using AgOpenGPS.Forms;
+﻿using AgOpenGPS.Classes;
+using AgOpenGPS.Forms;
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections;
@@ -355,7 +356,8 @@ namespace AgOpenGPS
                     pointA = CastVectPositionToObj(mf.ABLine.currentLinePtA),
                     pointB = CastVectPositionToObj(mf.ABLine.currentLinePtB),
                 };
-                string message = JsonSerializer.Serialize(new { msgType = "currentABLine", value = obj });
+                //string message = JsonSerializer.Serialize(new { msgType = "currentABLine", value = obj });
+                string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.currentABLine, value = obj, timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
                 var z = message.Length;
                 return message;
             }
@@ -371,7 +373,8 @@ namespace AgOpenGPS
                 {
                     curveLine = gArr[idx].curvePts.Select(CastVectPositionToObj),
                 };
-                string message = JsonSerializer.Serialize(new { msgType = "currentCurveLine", value = obj });
+                //string message = JsonSerializer.Serialize(new { msgType = "currentCurveLine", value = obj });
+                string message =  JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.currentCurveLine, value = obj, timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
                 var z = message.Length;
                 return message;
             }
