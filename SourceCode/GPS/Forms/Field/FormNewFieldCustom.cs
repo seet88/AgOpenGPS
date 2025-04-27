@@ -107,49 +107,15 @@ namespace AgOpenGPS.Forms.Field
             try
             {
                 var selectedRefField = listOfRefFieldsCmb.SelectedItem as RefField;
-                if(selectedRefField == null)
+                if (selectedRefField == null)
                 {
                     MessageBox.Show("No selected ref field, try again", gStr.gsError, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
                 CreateTaskDir(taskName);
                 CreateTaskFiles(selectedRefField, dirNewField);
-                mf.FileOpenField(dirNewField+"\\Field.txt");
-                //start a new job
-                //mf.JobNew();
+                mf.FileOpenField(dirNewField + "\\Field.txt");
 
-                ////create it for first save
-                //string directoryName = Path.GetDirectoryName(dirNewField);
-
-                //if ((!string.IsNullOrEmpty(directoryName)) && (Directory.Exists(directoryName)))
-                //{
-                //    MessageBox.Show(gStr.gsChooseADifferentName, gStr.gsDirectoryExists, MessageBoxButtons.OK, MessageBoxIcon.Stop);
-                //    return;
-                //}
-                //else
-                //{
-                //    mf.pn.latStart = mf.pn.latitude; mf.pn.lonStart = mf.pn.longitude;
-
-                //    mf.pn.SetLocalMetersPerDegree();
-
-                //    //make sure directory exists, or create it
-                //    if ((!string.IsNullOrEmpty(directoryName)) && (!Directory.Exists(directoryName)))
-                //    { Directory.CreateDirectory(directoryName); }
-
-                //    mf.displayFieldName = mf.currentFieldDirectory;
-
-                //    //create the field file header info
-                //    mf.FileCreateField();
-                //    mf.FileCreateSections();
-                //    mf.FileCreateRecPath();
-                //    mf.FileCreateContour();
-                //    mf.FileCreateElevation();
-                //    mf.FileSaveFlags();
-                //    mf.FileCreateBoundary();
-                //    //mf.FileSaveABLine();
-                //    //mf.FileSaveCurveLine();
-                //    //mf.FileSaveHeadland();
-                //}
             }
             catch (Exception ex)
             {
@@ -190,16 +156,21 @@ namespace AgOpenGPS.Forms.Field
             }
         }
 
+        private string GetDBFieldConnectionString()
+        {
+            string subPathToDbs = "dbs\\fields.db";
+            var pathToDb = $"{mf.baseDirectory}{subPathToDbs}";
+            string connectionString = $"Data Source={pathToDb};Version=3;";
+            return connectionString;
+        }
+
         private List<RefField> GetListOfRefFields()
         {
             List<RefField> list = new List<RefField>();
             try
             {
-                string subPathToDbs = "dbs\\fields.db";
-                var pathToDb = $"{mf.baseDirectory}{subPathToDbs}";
-                string connectionString = $"Data Source={pathToDb};Version=3;";
 
-                using (SQLiteConnection connection = new SQLiteConnection(connectionString))
+                using (SQLiteConnection connection = new SQLiteConnection(GetDBFieldConnectionString()))
                 {
                     connection.Open();
                     var lat = mf.pn.latitude;
@@ -277,14 +248,14 @@ namespace AgOpenGPS.Forms.Field
         private void SplitAndWriteStringToFile(StreamWriter writer, string str)
         {
             string[] lines = str.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-           
-                foreach (string line in lines)
-                {
-                    if(line.Length == 0) continue;
-                    writer.WriteLine(line);
-                }
-            
-        }   
+
+            foreach (string line in lines)
+            {
+                if (line.Length == 0) continue;
+                writer.WriteLine(line);
+            }
+
+        }
 
         private void CreateTaskFiles(RefField refField, string taskPathDir)
         {
@@ -340,6 +311,145 @@ namespace AgOpenGPS.Forms.Field
             using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
             {
                 SplitAndWriteStringToFile(writer, refField.abLines);
+            }
+        }
+
+
+        private string GetFileString(string pathToFile)
+        {
+            string line = "";
+            using (StreamReader reader = new StreamReader(pathToFile))
+            {
+                while (!reader.EndOfStream)
+                {
+                    line += reader.ReadLine() + "\r\n";
+                }
+            }
+            return line;
+        }
+
+        private RefField ParseTaskIntoRefField(string pathToTaskDir)
+        {
+            RefField rf = new RefField();
+            string fileName = "\\Field.txt";
+            if (File.Exists(pathToTaskDir + fileName))
+            {
+                rf.field = GetFileString(pathToTaskDir + fileName);
+            }
+            fileName = "\\Elevation.txt";
+            if (File.Exists(pathToTaskDir + fileName))
+            {
+                rf.elevation = GetFileString(pathToTaskDir + fileName);
+            }
+            fileName = "\\Sections.txt";
+            if (File.Exists(pathToTaskDir + fileName))
+            {
+                rf.sections = GetFileString(pathToTaskDir + fileName);
+            }
+            fileName = "\\Boundary.txt";
+            if (File.Exists(pathToTaskDir + fileName))
+            {
+                rf.boundary = GetFileString(pathToTaskDir + fileName);
+            }
+            fileName = "\\Flags.txt";
+            if (File.Exists(pathToTaskDir + fileName))
+            {
+                rf.flags = GetFileString(pathToTaskDir + fileName);
+            }
+            fileName = "\\Contour.txt";
+            if (File.Exists(pathToTaskDir + fileName))
+            {
+                rf.contour = GetFileString(pathToTaskDir + fileName);
+            }
+            fileName = "\\RecPath.txt";
+            if (File.Exists(pathToTaskDir + fileName))
+            {
+                rf.recPath = GetFileString(pathToTaskDir + fileName);
+            }
+            fileName = "\\CurveLines.txt";
+            if (File.Exists(pathToTaskDir + fileName))
+            {
+                rf.curveLines = GetFileString(pathToTaskDir + fileName);
+            }
+            fileName = "\\ABLines.txt";
+            if (File.Exists(pathToTaskDir + fileName))
+            {
+                rf.abLines = GetFileString(pathToTaskDir + fileName);
+            }
+
+
+            return rf;
+        }
+
+        private void SaveRefFieldIntoDB(RefField rf)
+        {
+
+            using (SQLiteConnection connection = new SQLiteConnection(GetDBFieldConnectionString()))
+            {
+                connection.Open();
+                var lat = mf.pn.latitude;
+                var lon = mf.pn.longitude;
+
+                string insertSql = "INSERT INTO ref_fields (lat, lon, name, field, boundary, contour, elevation, flags, recPath, sections, abLines, curveLines) " +
+                    "VALUES (@lat, @lon, @name, @field, @boundary, @contour, @elevation, @flags, @recPath, @sections, @abLines, @curveLines)";
+                using (var command = new SQLiteCommand(insertSql, connection))
+                {
+                    command.Parameters.AddWithValue("@lat", lat);
+                    command.Parameters.AddWithValue("@lon", lon);
+                    command.Parameters.AddWithValue("@name", rf.name);
+                    command.Parameters.AddWithValue("@field", rf.field);
+                    command.Parameters.AddWithValue("@boundary", rf.boundary);
+                    command.Parameters.AddWithValue("@contour", rf.contour);
+                    command.Parameters.AddWithValue("@elevation", rf.elevation);
+                    command.Parameters.AddWithValue("@flags", rf.flags);
+                    command.Parameters.AddWithValue("@recPath", rf.recPath);
+                    command.Parameters.AddWithValue("@sections", rf.sections);
+                    command.Parameters.AddWithValue("@abLines", rf.abLines);
+                    command.Parameters.AddWithValue("@curveLines", rf.curveLines);
+
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
+
+
+
+        private void createRefFieldBtn_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string newRefFieldName = newRefFieldNameTxt.Text.Trim();
+                if (String.IsNullOrEmpty(newRefFieldName))
+                {
+                    MessageBox.Show("No name for new ref field, try again", gStr.gsError, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                else
+                {
+                    if (!mf.isJobStarted)
+                    {
+                        MessageBox.Show("No active task, create one", gStr.gsError, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                    else
+                    {
+                        mf.FileSaveEverythingBeforeClosingField();
+
+                        var pathToTaskDictionary = mf.fieldsDirectory + mf.currentFieldDirectory;
+
+                        var rf= ParseTaskIntoRefField(pathToTaskDictionary);
+                        rf.name = newRefFieldName;
+                        SaveRefFieldIntoDB(rf);
+
+                    }
+
+
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Error: " + ex.Message);
+                MessageBox.Show("Error creating ref field: " + ex.Message, gStr.gsError, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }
