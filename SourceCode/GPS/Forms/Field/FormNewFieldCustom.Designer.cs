@@ -35,11 +35,12 @@
             this.taskNameLbl = new System.Windows.Forms.Label();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.createNewTask = new System.Windows.Forms.TabPage();
+            this.selectedRefFieldInfoRichTxtBox = new System.Windows.Forms.RichTextBox();
             this.CreateNewRefField = new System.Windows.Forms.TabPage();
+            this.newRefFieldLbl = new System.Windows.Forms.Label();
+            this.newRefFieldNameTxt = new System.Windows.Forms.TextBox();
             this.cancelBtn = new System.Windows.Forms.Button();
             this.createRefFieldBtn = new System.Windows.Forms.Button();
-            this.newRefFieldNameTxt = new System.Windows.Forms.TextBox();
-            this.newRefFieldLbl = new System.Windows.Forms.Label();
             this.tabControl1.SuspendLayout();
             this.createNewTask.SuspendLayout();
             this.CreateNewRefField.SuspendLayout();
@@ -109,7 +110,7 @@
             // listOfRefFieldsCmb
             // 
             this.listOfRefFieldsCmb.FormattingEnabled = true;
-            this.listOfRefFieldsCmb.Location = new System.Drawing.Point(13, 302);
+            this.listOfRefFieldsCmb.Location = new System.Drawing.Point(13, 241);
             this.listOfRefFieldsCmb.Name = "listOfRefFieldsCmb";
             this.listOfRefFieldsCmb.Size = new System.Drawing.Size(381, 31);
             this.listOfRefFieldsCmb.TabIndex = 153;
@@ -118,7 +119,7 @@
             // refFieldLabel
             // 
             this.refFieldLabel.AutoSize = true;
-            this.refFieldLabel.Location = new System.Drawing.Point(19, 265);
+            this.refFieldLabel.Location = new System.Drawing.Point(19, 201);
             this.refFieldLabel.Name = "refFieldLabel";
             this.refFieldLabel.Size = new System.Drawing.Size(130, 23);
             this.refFieldLabel.TabIndex = 154;
@@ -126,7 +127,7 @@
             // 
             // taskNameTxt
             // 
-            this.taskNameTxt.Location = new System.Drawing.Point(11, 182);
+            this.taskNameTxt.Location = new System.Drawing.Point(11, 150);
             this.taskNameTxt.Name = "taskNameTxt";
             this.taskNameTxt.Size = new System.Drawing.Size(522, 30);
             this.taskNameTxt.TabIndex = 155;
@@ -135,7 +136,7 @@
             // taskNameLbl
             // 
             this.taskNameLbl.AutoSize = true;
-            this.taskNameLbl.Location = new System.Drawing.Point(19, 140);
+            this.taskNameLbl.Location = new System.Drawing.Point(19, 113);
             this.taskNameLbl.Name = "taskNameLbl";
             this.taskNameLbl.Size = new System.Drawing.Size(101, 23);
             this.taskNameLbl.TabIndex = 156;
@@ -153,6 +154,7 @@
             // 
             // createNewTask
             // 
+            this.createNewTask.Controls.Add(this.selectedRefFieldInfoRichTxtBox);
             this.createNewTask.Controls.Add(this.listOfRefFieldsCmb);
             this.createNewTask.Controls.Add(this.taskNameLbl);
             this.createNewTask.Controls.Add(this.refFieldLabel);
@@ -169,6 +171,15 @@
             this.createNewTask.Text = "Create new task";
             this.createNewTask.UseVisualStyleBackColor = true;
             // 
+            // selectedRefFieldInfoRichTxtBox
+            // 
+            this.selectedRefFieldInfoRichTxtBox.Location = new System.Drawing.Point(13, 310);
+            this.selectedRefFieldInfoRichTxtBox.Name = "selectedRefFieldInfoRichTxtBox";
+            this.selectedRefFieldInfoRichTxtBox.ReadOnly = true;
+            this.selectedRefFieldInfoRichTxtBox.Size = new System.Drawing.Size(381, 133);
+            this.selectedRefFieldInfoRichTxtBox.TabIndex = 157;
+            this.selectedRefFieldInfoRichTxtBox.Text = "";
+            // 
             // CreateNewRefField
             // 
             this.CreateNewRefField.Controls.Add(this.newRefFieldLbl);
@@ -182,6 +193,22 @@
             this.CreateNewRefField.TabIndex = 1;
             this.CreateNewRefField.Text = "Create new ref field";
             this.CreateNewRefField.UseVisualStyleBackColor = true;
+            // 
+            // newRefFieldLbl
+            // 
+            this.newRefFieldLbl.AutoSize = true;
+            this.newRefFieldLbl.Location = new System.Drawing.Point(38, 51);
+            this.newRefFieldLbl.Name = "newRefFieldLbl";
+            this.newRefFieldLbl.Size = new System.Drawing.Size(168, 23);
+            this.newRefFieldLbl.TabIndex = 8;
+            this.newRefFieldLbl.Text = "new ref field name";
+            // 
+            // newRefFieldNameTxt
+            // 
+            this.newRefFieldNameTxt.Location = new System.Drawing.Point(38, 85);
+            this.newRefFieldNameTxt.Name = "newRefFieldNameTxt";
+            this.newRefFieldNameTxt.Size = new System.Drawing.Size(479, 30);
+            this.newRefFieldNameTxt.TabIndex = 7;
             // 
             // cancelBtn
             // 
@@ -217,22 +244,6 @@
             this.createRefFieldBtn.TextAlign = System.Drawing.ContentAlignment.BottomCenter;
             this.createRefFieldBtn.UseVisualStyleBackColor = false;
             this.createRefFieldBtn.Click += new System.EventHandler(this.createRefFieldBtn_Click);
-            // 
-            // newRefFieldNameTxt
-            // 
-            this.newRefFieldNameTxt.Location = new System.Drawing.Point(38, 85);
-            this.newRefFieldNameTxt.Name = "newRefFieldNameTxt";
-            this.newRefFieldNameTxt.Size = new System.Drawing.Size(479, 30);
-            this.newRefFieldNameTxt.TabIndex = 7;
-            // 
-            // newRefFieldLbl
-            // 
-            this.newRefFieldLbl.AutoSize = true;
-            this.newRefFieldLbl.Location = new System.Drawing.Point(38, 51);
-            this.newRefFieldLbl.Name = "newRefFieldLbl";
-            this.newRefFieldLbl.Size = new System.Drawing.Size(168, 23);
-            this.newRefFieldLbl.TabIndex = 8;
-            this.newRefFieldLbl.Text = "new ref field name";
             // 
             // FormNewFieldCustom
             // 
@@ -291,5 +302,6 @@
         private System.Windows.Forms.Button createRefFieldBtn;
         private System.Windows.Forms.TextBox newRefFieldNameTxt;
         private System.Windows.Forms.Label newRefFieldLbl;
+        private System.Windows.Forms.RichTextBox selectedRefFieldInfoRichTxtBox;
     }
 }

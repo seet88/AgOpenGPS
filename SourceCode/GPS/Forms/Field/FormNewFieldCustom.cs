@@ -169,7 +169,6 @@ namespace AgOpenGPS.Forms.Field
             List<RefField> list = new List<RefField>();
             try
             {
-
                 using (SQLiteConnection connection = new SQLiteConnection(GetDBFieldConnectionString()))
                 {
                     connection.Open();
@@ -186,18 +185,28 @@ namespace AgOpenGPS.Forms.Field
                             {
                                 name = reader["name"].ToString(),
                                 id = Convert.ToInt32(reader["id"]),
-                                distance = Convert.ToDouble(reader["distance"]),
-                                lat = Convert.ToDouble(reader["lat"]),
-                                lon = Convert.ToDouble(reader["lon"]),
-                                boundary = reader["boundary"].ToString(),
-                                contour = reader["contour"].ToString(),
-                                elevation = reader["elevation"].ToString(),
-                                field = reader["field"].ToString(),
-                                flags = reader["flags"].ToString(),
-                                recPath = reader["recPath"].ToString(),
-                                sections = reader["sections"].ToString(),
-                                abLines = reader["abLines"].ToString(),
-                                curveLines = reader["curveLines"].ToString()
+                                distance = String.IsNullOrEmpty(reader["distance"]?.ToString()) ? 999999 : Convert.ToDouble(reader["distance"]),
+                                lat = String.IsNullOrEmpty(reader["lat"]?.ToString()) ? 0 : Convert.ToDouble(reader["lat"]),
+                                lon = String.IsNullOrEmpty(reader["lon"]?.ToString()) ? 0 : Convert.ToDouble(reader["lon"]),
+                                boundary = reader["boundary"]?.ToString(),
+                                contour = reader["contour"]?.ToString(),
+                                elevation = reader["elevation"]?.ToString(),
+                                field = reader["field"]?.ToString(),
+                                flags = reader["flags"]?.ToString(),
+                                recPath = reader["recPath"]?.ToString(),
+                                sections = reader["sections"]?.ToString(),
+                                abLines = reader["abLines"]?.ToString(),
+                                curveLines = reader["curveLines"]?.ToString(),
+                                tram = reader["tram"]?.ToString(),
+                                headlines = reader["headlines"]?.ToString(),
+                                headland = reader["headland"]?.ToString(),
+                                backPic = reader["backPic"]?.ToString(),
+                                rateMap = reader["rateMap"]?.ToString(),
+                                createDate = reader["create_date"]?.ToString(),
+                                modDate = reader["mod_date"]?.ToString(),
+                                description = reader["description"]?.ToString(),
+                                area = String.IsNullOrEmpty(reader["area"]?.ToString()) ? 0 : Convert.ToDouble(reader["area"])
+
                             };
                             rf.desc = $"#{rf.id} {rf.name} d:{rf.distance.ToString("0.00", CultureInfo.InvariantCulture)} m";
                             list.Add(rf);
@@ -229,10 +238,31 @@ namespace AgOpenGPS.Forms.Field
             SetTaskName();
         }
 
+        private string GetInfoFromSelectedRefField()
+        {
+            var selectedRefField = listOfRefFieldsCmb.SelectedItem as RefField;
+            if (selectedRefField != null)
+            {
+                string info = $"Name: {selectedRefField.name}\r\n" +
+                    $"Distance: {selectedRefField.distance.ToString("0.00", CultureInfo.InvariantCulture)} m\r\n" +
+                    $"Area: {selectedRefField.area.ToString("0.00", CultureInfo.InvariantCulture)} ha\r\n" +
+                    $"Description: {selectedRefField.desc}\r\n" +
+                    $"Create date: {selectedRefField.createDate}\r\n" +
+                    $"Modify date: {selectedRefField.modDate}\r\n" +
+                    $"ID: {selectedRefField.id}\r\n" +
+                    $"Lat: {selectedRefField.lat.ToString("0.000000", CultureInfo.InvariantCulture)}\r\n" +
+                    $"Lon: {selectedRefField.lon.ToString("0.000000", CultureInfo.InvariantCulture)}\r\n";
+                return info;
+            }
+            return "";
+        }
+
         private void listOfRefFieldsCmb_SelectedIndexChanged(object sender, EventArgs e)
         {
 
             SetTaskName();
+            selectedRefFieldInfoRichTxtBox.Text = GetInfoFromSelectedRefField(); 
+            
         }
 
         private string CreateTaskDir(string taskName)
@@ -260,58 +290,121 @@ namespace AgOpenGPS.Forms.Field
         private void CreateTaskFiles(RefField refField, string taskPathDir)
         {
             string myFileName = "Field.txt";
-            using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
+            if (refField.field != null && refField.field.Length > 0)
             {
-                SplitAndWriteStringToFile(writer, refField.field);
+                using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
+                {
+                    SplitAndWriteStringToFile(writer, refField.field);
+                }
             }
 
-            myFileName = "Elevation.txt";
-            using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
+            if (refField.tram != null && refField.tram.Length > 0)
             {
-                SplitAndWriteStringToFile(writer, refField.elevation);
+                myFileName = "Tram.txt";
+                using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
+                {
+                    SplitAndWriteStringToFile(writer, refField.tram);
+                }
             }
 
-            myFileName = "Sections.txt";
-            using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
+            if (refField.flags != null && refField.flags.Length > 0)
             {
-                SplitAndWriteStringToFile(writer, refField.sections);
+                myFileName = "Flags.txt";
+                using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
+                {
+                    SplitAndWriteStringToFile(writer, refField.flags);
+                }
+            }
+            if (refField.recPath != null && refField.recPath.Length > 0)
+            {
+                myFileName = "RecPath.txt";
+                using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
+                {
+                    SplitAndWriteStringToFile(writer, refField.recPath);
+                }
             }
 
-            myFileName = "Boundary.txt";
-            using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
+            if (refField.sections != null && refField.sections.Length > 0)
             {
-                SplitAndWriteStringToFile(writer, refField.boundary);
+                myFileName = "Sections.txt";
+                using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
+                {
+                    SplitAndWriteStringToFile(writer, refField.sections);
+                }
+            }
+            if (refField.elevation != null && refField.elevation.Length > 0)
+            {
+                myFileName = "Elevation.txt";
+                using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
+                {
+                    SplitAndWriteStringToFile(writer, refField.elevation);
+                }
+            }
+            if (refField.boundary != null && refField.boundary.Length > 0)
+            {
+                myFileName = "Boundary.txt";
+                using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
+                {
+                    SplitAndWriteStringToFile(writer, refField.boundary);
+                }
+            }
+            if (refField.contour != null && refField.contour.Length > 0)
+            {
+                myFileName = "Contour.txt";
+                using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
+                {
+                    SplitAndWriteStringToFile(writer, refField.contour);
+                }
+            }
+            if (refField.curveLines != null && refField.curveLines.Length > 0)
+            {
+                myFileName = "CurveLines.txt";
+                using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
+                {
+                    SplitAndWriteStringToFile(writer, refField.curveLines);
+                }
+            }
+            if (refField.abLines != null && refField.abLines.Length > 0)
+            {
+                myFileName = "ABLines.txt";
+                using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
+                {
+                    SplitAndWriteStringToFile(writer, refField.abLines);
+                }
+            }
+            if (refField.headlines != null && refField.headlines.Length > 0)
+            {
+                myFileName = "Headlines.txt";
+                using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
+                {
+                    SplitAndWriteStringToFile(writer, refField.headlines);
+                }
+            }
+            if (refField.headland != null && refField.headland.Length > 0)
+            {
+                myFileName = "Headland.txt";
+                using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
+                {
+                    SplitAndWriteStringToFile(writer, refField.headland);
+                }
+            }
+            if (refField.backPic != null && refField.backPic.Length > 0)
+            {
+                myFileName = "BackPic.txt";
+                using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
+                {
+                    SplitAndWriteStringToFile(writer, refField.backPic);
+                }
+            }
+            if (refField.rateMap != null && refField.rateMap.Length > 0)
+            {
+                myFileName = "RateMap.txt";
+                using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
+                {
+                    SplitAndWriteStringToFile(writer, refField.rateMap);
+                }
             }
 
-            myFileName = "Flags.txt";
-            using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
-            {
-                SplitAndWriteStringToFile(writer, refField.flags);
-            }
-
-            myFileName = "Contour.txt";
-            using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
-            {
-                SplitAndWriteStringToFile(writer, refField.contour);
-            }
-
-            myFileName = "RecPath.txt";
-            using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
-            {
-                SplitAndWriteStringToFile(writer, refField.recPath);
-            }
-
-            myFileName = "CurveLines.txt";
-            using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
-            {
-                SplitAndWriteStringToFile(writer, refField.curveLines);
-            }
-
-            myFileName = "ABLines.txt";
-            using (StreamWriter writer = new StreamWriter(taskPathDir + myFileName))
-            {
-                SplitAndWriteStringToFile(writer, refField.abLines);
-            }
         }
 
 
@@ -376,6 +469,31 @@ namespace AgOpenGPS.Forms.Field
             {
                 rf.abLines = GetFileString(pathToTaskDir + fileName);
             }
+            fileName = "\\Headlines.txt";
+            if (File.Exists(pathToTaskDir + fileName))
+            {
+                rf.headlines = GetFileString(pathToTaskDir + fileName);
+            }
+            fileName = "\\Headland.txt";
+            if (File.Exists(pathToTaskDir + fileName))
+            {
+                rf.headland = GetFileString(pathToTaskDir + fileName);
+            }
+            fileName = "\\BackPic.txt";
+            if (File.Exists(pathToTaskDir + fileName))
+            {
+                rf.backPic = GetFileString(pathToTaskDir + fileName);
+            }
+            fileName = "\\RateMap.txt";
+            if (File.Exists(pathToTaskDir + fileName))
+            {
+                rf.rateMap = GetFileString(pathToTaskDir + fileName);
+            }
+            fileName = "\\Tram.txt";
+            if (File.Exists(pathToTaskDir + fileName))
+            {
+                rf.tram = GetFileString(pathToTaskDir + fileName);
+            }
 
 
             return rf;
@@ -390,8 +508,9 @@ namespace AgOpenGPS.Forms.Field
                 var lat = mf.pn.latitude;
                 var lon = mf.pn.longitude;
 
-                string insertSql = "INSERT INTO ref_fields (lat, lon, name, field, boundary, contour, elevation, flags, recPath, sections, abLines, curveLines) " +
-                    "VALUES (@lat, @lon, @name, @field, @boundary, @contour, @elevation, @flags, @recPath, @sections, @abLines, @curveLines)";
+                string insertSql = "INSERT INTO ref_fields (lat, lon, name, field, boundary, contour, elevation, flags, recPath, sections, abLines, curveLines, tram, headlines, headland, backPic, rateMap, create_date,  description, area) " +
+                    "VALUES (@lat, @lon, @name, @field, @boundary, @contour, @elevation, @flags, @recPath, @sections, @abLines, @curveLines,@tram,@headlines,@headland,@backPic,@rateMap, @createDate, @description, @area)";
+
                 using (var command = new SQLiteCommand(insertSql, connection))
                 {
                     command.Parameters.AddWithValue("@lat", lat);
@@ -406,11 +525,35 @@ namespace AgOpenGPS.Forms.Field
                     command.Parameters.AddWithValue("@sections", rf.sections);
                     command.Parameters.AddWithValue("@abLines", rf.abLines);
                     command.Parameters.AddWithValue("@curveLines", rf.curveLines);
+                    command.Parameters.AddWithValue("@tram", rf.tram);
+                    command.Parameters.AddWithValue("@headlines", rf.headlines);
+                    command.Parameters.AddWithValue("@headland", rf.headland);
+                    command.Parameters.AddWithValue("@backPic", rf.backPic);
+                    command.Parameters.AddWithValue("@rateMap", rf.rateMap);
+                    command.Parameters.AddWithValue("@createDate", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
+                    //command.Parameters.AddWithValue("@modDate", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
+                    command.Parameters.AddWithValue("@description", rf.description);
+                    command.Parameters.AddWithValue("@area", rf.area);
 
                     command.ExecuteNonQuery();
                 }
             }
         }
+
+
+        private (double, double) GetBoundaryPointInWGS84(List<CBoundaryList> bndList)
+        {
+            double lat = 0;
+            double lon = 0;
+            if (bndList.First() == null || bndList.First().fenceLine.Count == 0)
+            {
+                return (lat, lon);
+            }
+            mf.pn.ConvertLocalToWGS84(bndList.First().fenceLine.First().northing, bndList.First().fenceLine.First().easting, out lat, out lon);
+
+            return (lat, lon);
+        }
+
 
 
 
@@ -433,18 +576,33 @@ namespace AgOpenGPS.Forms.Field
                     }
                     else
                     {
+                        //get bounadary info before closing
+                        var bndList = mf.bnd.bndList;
+                        var point = GetBoundaryPointInWGS84(bndList);
+                        var area = mf.bnd.bndList.FirstOrDefault()?.area / 10000 ?? 0;
+
+                        //close field/task
                         mf.FileSaveEverythingBeforeClosingField();
 
                         var pathToTaskDictionary = mf.fieldsDirectory + mf.currentFieldDirectory;
 
-                        var rf= ParseTaskIntoRefField(pathToTaskDictionary);
+
+                        var rf = ParseTaskIntoRefField(pathToTaskDictionary);
                         rf.name = newRefFieldName;
+                        rf.area = area;
+                        rf.lat = point.Item1;
+                        rf.lon = point.Item2;
                         SaveRefFieldIntoDB(rf);
 
                     }
 
 
                 }
+                var form = new FormTimedMessage(2000, "Field created", "Success");
+
+                form.Show(this);
+                Close();
+
             }
             catch (Exception ex)
             {
@@ -471,6 +629,17 @@ namespace AgOpenGPS.Forms.Field
         public string sections { get; set; }
         public string abLines { get; set; }
         public string curveLines { get; set; }
+        public string tram { get; set; }
+        public string headlines { get; set; }
+        public string headland { get; set; }
+        public string backPic { get; set; }
+        public string rateMap { get; set; }
+        public string createDate { get; set; }
+        public string modDate { get; set; }
+        public string description { get; set; }
+        public double area { get; set; }
+
+
 
     }
 }
