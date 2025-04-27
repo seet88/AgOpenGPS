@@ -35,6 +35,10 @@
             this.taskNameLbl = new System.Windows.Forms.Label();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.createNewTask = new System.Windows.Forms.TabPage();
+            this.listOfToolsCmb = new System.Windows.Forms.ComboBox();
+            this.listOfVehiclesCmb = new System.Windows.Forms.ComboBox();
+            this.toolLbl = new System.Windows.Forms.Label();
+            this.vehicleLbl = new System.Windows.Forms.Label();
             this.selectedRefFieldInfoRichTxtBox = new System.Windows.Forms.RichTextBox();
             this.CreateNewRefField = new System.Windows.Forms.TabPage();
             this.newRefFieldLbl = new System.Windows.Forms.Label();
@@ -67,7 +71,7 @@
             this.btnSave.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSave.ForeColor = System.Drawing.SystemColors.ActiveCaptionText;
             this.btnSave.Image = global::AgOpenGPS.Properties.Resources.OK64;
-            this.btnSave.Location = new System.Drawing.Point(535, 365);
+            this.btnSave.Location = new System.Drawing.Point(1120, 365);
             this.btnSave.Name = "btnSave";
             this.btnSave.Size = new System.Drawing.Size(83, 79);
             this.btnSave.TabIndex = 3;
@@ -86,7 +90,7 @@
             this.btnSerialCancel.Font = new System.Drawing.Font("Tahoma", 12F);
             this.btnSerialCancel.ForeColor = System.Drawing.SystemColors.ActiveCaptionText;
             this.btnSerialCancel.Image = global::AgOpenGPS.Properties.Resources.Cancel64;
-            this.btnSerialCancel.Location = new System.Drawing.Point(419, 364);
+            this.btnSerialCancel.Location = new System.Drawing.Point(1004, 364);
             this.btnSerialCancel.Name = "btnSerialCancel";
             this.btnSerialCancel.Size = new System.Drawing.Size(77, 79);
             this.btnSerialCancel.TabIndex = 4;
@@ -149,11 +153,15 @@
             this.tabControl1.Location = new System.Drawing.Point(21, 35);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(635, 485);
+            this.tabControl1.Size = new System.Drawing.Size(1220, 485);
             this.tabControl1.TabIndex = 157;
             // 
             // createNewTask
             // 
+            this.createNewTask.Controls.Add(this.listOfToolsCmb);
+            this.createNewTask.Controls.Add(this.listOfVehiclesCmb);
+            this.createNewTask.Controls.Add(this.toolLbl);
+            this.createNewTask.Controls.Add(this.vehicleLbl);
             this.createNewTask.Controls.Add(this.selectedRefFieldInfoRichTxtBox);
             this.createNewTask.Controls.Add(this.listOfRefFieldsCmb);
             this.createNewTask.Controls.Add(this.taskNameLbl);
@@ -166,10 +174,44 @@
             this.createNewTask.Location = new System.Drawing.Point(4, 32);
             this.createNewTask.Name = "createNewTask";
             this.createNewTask.Padding = new System.Windows.Forms.Padding(3);
-            this.createNewTask.Size = new System.Drawing.Size(627, 449);
+            this.createNewTask.Size = new System.Drawing.Size(1212, 449);
             this.createNewTask.TabIndex = 0;
             this.createNewTask.Text = "Create new task";
             this.createNewTask.UseVisualStyleBackColor = true;
+            // 
+            // listOfToolsCmb
+            // 
+            this.listOfToolsCmb.FormattingEnabled = true;
+            this.listOfToolsCmb.Location = new System.Drawing.Point(758, 236);
+            this.listOfToolsCmb.Name = "listOfToolsCmb";
+            this.listOfToolsCmb.Size = new System.Drawing.Size(206, 31);
+            this.listOfToolsCmb.TabIndex = 161;
+            // 
+            // listOfVehiclesCmb
+            // 
+            this.listOfVehiclesCmb.FormattingEnabled = true;
+            this.listOfVehiclesCmb.Location = new System.Drawing.Point(445, 236);
+            this.listOfVehiclesCmb.Name = "listOfVehiclesCmb";
+            this.listOfVehiclesCmb.Size = new System.Drawing.Size(206, 31);
+            this.listOfVehiclesCmb.TabIndex = 160;
+            // 
+            // toolLbl
+            // 
+            this.toolLbl.AutoSize = true;
+            this.toolLbl.Location = new System.Drawing.Point(780, 210);
+            this.toolLbl.Name = "toolLbl";
+            this.toolLbl.Size = new System.Drawing.Size(40, 23);
+            this.toolLbl.TabIndex = 159;
+            this.toolLbl.Text = "tool";
+            // 
+            // vehicleLbl
+            // 
+            this.vehicleLbl.AutoSize = true;
+            this.vehicleLbl.Location = new System.Drawing.Point(454, 210);
+            this.vehicleLbl.Name = "vehicleLbl";
+            this.vehicleLbl.Size = new System.Drawing.Size(67, 23);
+            this.vehicleLbl.TabIndex = 158;
+            this.vehicleLbl.Text = "vehicle";
             // 
             // selectedRefFieldInfoRichTxtBox
             // 
@@ -189,7 +231,7 @@
             this.CreateNewRefField.Location = new System.Drawing.Point(4, 32);
             this.CreateNewRefField.Name = "CreateNewRefField";
             this.CreateNewRefField.Padding = new System.Windows.Forms.Padding(3);
-            this.CreateNewRefField.Size = new System.Drawing.Size(627, 449);
+            this.CreateNewRefField.Size = new System.Drawing.Size(1212, 449);
             this.CreateNewRefField.TabIndex = 1;
             this.CreateNewRefField.Text = "Create new ref field";
             this.CreateNewRefField.UseVisualStyleBackColor = true;
@@ -250,7 +292,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.ClientSize = new System.Drawing.Size(676, 559);
+            this.ClientSize = new System.Drawing.Size(1258, 559);
             this.ControlBox = false;
             this.Controls.Add(this.tabControl1);
             this.Font = new System.Drawing.Font("Tahoma", 14.25F);
@@ -303,5 +345,9 @@
         private System.Windows.Forms.TextBox newRefFieldNameTxt;
         private System.Windows.Forms.Label newRefFieldLbl;
         private System.Windows.Forms.RichTextBox selectedRefFieldInfoRichTxtBox;
+        private System.Windows.Forms.ComboBox listOfToolsCmb;
+        private System.Windows.Forms.ComboBox listOfVehiclesCmb;
+        private System.Windows.Forms.Label toolLbl;
+        private System.Windows.Forms.Label vehicleLbl;
     }
 }

@@ -21,6 +21,11 @@ namespace AgOpenGPS
     {
         Form currentForm = null;
         public bool isCreateNewFieldCustom = false;
+        public string fieldGuid = "";
+        public string vehicleGuid = "";
+        public string toolGuid = "";
+        public string clientName = "";
+        public string taskGuid = "";
         #region Right Menu
         public bool isABCyled = false;
         private void btnContour_Click(object sender, EventArgs e)
@@ -564,6 +569,8 @@ namespace AgOpenGPS
         }
         public void FileSaveEverythingBeforeClosingField()
         {
+            var remainingArea = double.Parse(this.fd.ActualRemainHectares);
+            var currentTaskName = currentFieldDirectory;
             //turn off contour line if on
             if (ct.isContourOn) ct.StopContourLine();
 
@@ -606,6 +613,23 @@ namespace AgOpenGPS
             JobClose();
 
             Text = "AgOpenGPS";
+
+
+            var pathToTaskDictionary = fieldsDirectory + currentTaskName;
+
+            
+            var basic = this.formNewFieldCustom.ParseTaskIntoRefField(pathToTaskDictionary);
+            TaskCustom tk = this.formNewFieldCustom.CastBasicTaskIntoTaskCustom(basic);
+            tk.guid = taskGuid;
+            tk.areaRemain = remainingArea;
+            tk.areaDone = (this.fd.actualAreaCovered * 0.0001) ;
+            this.formNewFieldCustom.UpdateTaskInDb(tk);
+
+            taskGuid = "";
+            fieldGuid = "";
+            vehicleGuid = "";
+            toolGuid = "";
+
         }
         private void tramLinesMenuField_Click(object sender, EventArgs e)
         {

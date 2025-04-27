@@ -1915,6 +1915,8 @@ namespace AgOpenGPS
             //update field data
             oglZoom.Refresh();
 
+            this.formNewFieldCustom.SetMainFormProps();
+
         }//end of open file
 
         //creates the field file when starting new field

@@ -2,6 +2,7 @@
 
 using AgOpenGPS;
 using AgOpenGPS.Classes;
+using AgOpenGPS.Forms.Field;
 using AgOpenGPS.Properties;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
@@ -257,6 +258,8 @@ namespace AgOpenGPS
 
         public CCustomDataSender customDataSender;
 
+        public FormNewFieldCustom formNewFieldCustom;
+
         #endregion // Class Props and instances
 
         public FormGPS()
@@ -353,6 +356,9 @@ namespace AgOpenGPS
 
             //custom data sender
             customDataSender = new CCustomDataSender(this);
+
+            //form field custom
+            formNewFieldCustom = new FormNewFieldCustom(this);
         }
 
         private void FormGPS_Load(object sender, EventArgs e)

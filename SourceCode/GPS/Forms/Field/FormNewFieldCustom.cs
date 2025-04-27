@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Data.SQLite;
 using System.Diagnostics;
+using System.Xml.Linq;
 
 namespace AgOpenGPS.Forms.Field
 {
@@ -24,6 +25,9 @@ namespace AgOpenGPS.Forms.Field
             mf = _callingForm as FormGPS;
             InitializeComponent();
             InitRefFields();
+            InitVehicles();
+            InitTools();
+
         }
 
         private void InitRefFields()
@@ -31,6 +35,19 @@ namespace AgOpenGPS.Forms.Field
             listOfRefFieldsCmb.DisplayMember = "desc";
             listOfRefFieldsCmb.Items.Clear();
             listOfRefFieldsCmb.Items.AddRange(GetListOfRefFields().ToArray());
+        }
+
+        private void InitVehicles()
+        {
+            listOfVehiclesCmb.DisplayMember = "name";
+            listOfVehiclesCmb.Items.Clear();
+            listOfVehiclesCmb.Items.AddRange(GetListOfVehicles().ToArray());
+        }   
+        private void InitTools()
+        {
+            listOfToolsCmb.DisplayMember = "name";
+            listOfToolsCmb.Items.Clear();
+            listOfToolsCmb.Items.AddRange(GetListOfTool().ToArray());
         }
 
         private void FormNewFieldCustom_Load(object sender, EventArgs e)
@@ -85,6 +102,192 @@ namespace AgOpenGPS.Forms.Field
             tboxFieldName.Text += " " + DateTime.Now.ToString("HH-mm", CultureInfo.InvariantCulture);
         }
 
+        private void CreateNewTaskEntryInDB(RefField rf)
+        {
+
+            using (SQLiteConnection connection = new SQLiteConnection(GetDBFieldConnectionString("tasks")))
+            {
+                connection.Open();
+
+                string insertSql = "INSERT INTO tasks (lat, lon, name, field, boundary, contour, elevation, flags, recPath, sections, abLines, curveLines, tram, headlines, headland, backPic, rateMap, create_date,  description, area_remain, tool_id, vehicle_id, vehicle_setting_name, guid, client_name) " +
+                    "VALUES (@lat, @lon, @name, @field, @boundary, @contour, @elevation, @flags, @recPath, @sections, @abLines, @curveLines,@tram,@headlines,@headland,@backPic,@rateMap, @createDate, @description, @area, @toolId, @vehicleId, @vehicleSettingName, @guid, @clientName)";
+
+                using (var command = new SQLiteCommand(insertSql, connection))
+                {
+                    command.Parameters.AddWithValue("@lat", rf.lat);
+                    command.Parameters.AddWithValue("@lon", rf.lon);
+                    command.Parameters.AddWithValue("@name", mf.currentFieldDirectory);
+                    command.Parameters.AddWithValue("@field", rf.field);
+                    command.Parameters.AddWithValue("@boundary", rf.boundary);
+                    command.Parameters.AddWithValue("@contour", rf.contour);
+                    command.Parameters.AddWithValue("@elevation", rf.elevation);
+                    command.Parameters.AddWithValue("@flags", rf.flags);
+                    command.Parameters.AddWithValue("@recPath", rf.recPath);
+                    command.Parameters.AddWithValue("@sections", rf.sections);
+                    command.Parameters.AddWithValue("@abLines", rf.abLines);
+                    command.Parameters.AddWithValue("@curveLines", rf.curveLines);
+                    command.Parameters.AddWithValue("@tram", rf.tram);
+                    command.Parameters.AddWithValue("@headlines", rf.headlines);
+                    command.Parameters.AddWithValue("@headland", rf.headland);
+                    command.Parameters.AddWithValue("@backPic", rf.backPic);
+                    command.Parameters.AddWithValue("@rateMap", rf.rateMap);
+                    command.Parameters.AddWithValue("@createDate", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
+                    //command.Parameters.AddWithValue("@modDate", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
+                    command.Parameters.AddWithValue("@description", rf.description);
+                    command.Parameters.AddWithValue("@area", rf.area);
+                    command.Parameters.AddWithValue("@toolId", mf.toolGuid);
+                    command.Parameters.AddWithValue("@vehicleId", mf.vehicleGuid);
+                    command.Parameters.AddWithValue("@vehicleSettingName", mf.vehicleFileName);
+                    command.Parameters.AddWithValue("@guid", Guid.NewGuid().ToString());
+                    command.Parameters.AddWithValue("@clientName", mf.clientName);
+
+
+                    command.ExecuteNonQuery();                    
+                }
+                // Get the ID of the newly inserted row
+                using (var command = new SQLiteCommand("select guid from tasks where id = (SELECT last_insert_rowid())", connection))
+                {
+                    string  newGuid = command.ExecuteScalar()?.ToString();
+                    Console.WriteLine($"New row ID: {newGuid}");
+                    mf.taskGuid = newGuid;
+                }
+            }
+        }
+
+        public void UpdateTaskInDb(TaskCustom rf)
+        {
+            using (SQLiteConnection connection = new SQLiteConnection(GetDBFieldConnectionString("tasks")))
+            {
+                connection.Open();
+
+                string updateSql = "UPDATE tasks SET " +
+                "field = @field, boundary = @boundary, contour = @contour, " +
+                "elevation = @elevation, flags = @flags, recPath = @recPath, sections = @sections, abLines = @abLines, " +
+                "curveLines = @curveLines, tram = @tram, headlines = @headlines, headland = @headland, backPic = @backPic, " +
+                "rateMap = @rateMap, mod_date = @modDate, area_remain = @areaRemain, area_done = @areaDone " +
+                "WHERE guid = @guid";
+
+
+                using (var command = new SQLiteCommand(updateSql, connection))
+                {
+
+                    command.Parameters.AddWithValue("@field", rf.field);
+                    command.Parameters.AddWithValue("@boundary", rf.boundary);
+                    command.Parameters.AddWithValue("@contour", rf.contour);
+                    command.Parameters.AddWithValue("@elevation", rf.elevation);
+                    command.Parameters.AddWithValue("@flags", rf.flags);
+                    command.Parameters.AddWithValue("@recPath", rf.recPath);
+                    command.Parameters.AddWithValue("@sections", rf.sections);
+                    command.Parameters.AddWithValue("@abLines", rf.abLines);
+                    command.Parameters.AddWithValue("@curveLines", rf.curveLines);
+                    command.Parameters.AddWithValue("@tram", rf.tram);
+                    command.Parameters.AddWithValue("@headlines", rf.headlines);
+                    command.Parameters.AddWithValue("@headland", rf.headland);
+                    command.Parameters.AddWithValue("@backPic", rf.backPic);
+                    command.Parameters.AddWithValue("@rateMap", rf.rateMap);
+                    command.Parameters.AddWithValue("@modDate", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
+                    command.Parameters.AddWithValue("@areaRemain", Math.Round(rf.areaRemain, 2));
+                    command.Parameters.AddWithValue("@areaDone", Math.Round(rf.areaDone, 2));
+                    //command.Parameters.AddWithValue("@toolId", mf.toolGuid);
+                    //command.Parameters.AddWithValue("@vehicleId", mf.vehicleGuid);
+                    //command.Parameters.AddWithValue("@vehicleSettingName", mf.vehicleFileName);
+                    command.Parameters.AddWithValue("@guid", rf.guid);
+                    //command.Parameters.AddWithValue("@clientName", mf.clientName);
+
+
+                    command.ExecuteNonQuery();
+                }
+                // Get the ID of the newly inserted row
+                
+
+            }
+        }
+
+        public List<TaskCustom> GetListOfTasksc()
+        {
+            List<TaskCustom> list = new List<TaskCustom>();
+            if (mf.baseDirectory == null) return list;
+            try
+            {
+                using (SQLiteConnection connection = new SQLiteConnection(GetDBFieldConnectionString("tasks")))
+                {
+                    connection.Open();
+                    var lat = mf.pn.latitude;
+                    var lon = mf.pn.longitude;
+
+                    string sql = $"SELECT *, ((lat - {lat})*(lat - {lat}) + (lon - {lon})*(lon - {lon})) AS distance FROM tasks ORDER BY distance ASC;";
+                    using (SQLiteCommand command = new SQLiteCommand(sql, connection))
+                    using (SQLiteDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var rf = new TaskCustom()
+                            {
+                                name = reader["name"].ToString(),
+                                id = Convert.ToInt32(reader["id"]),
+                                distance = String.IsNullOrEmpty(reader["distance"]?.ToString()) ? 999999 : Convert.ToDouble(reader["distance"]),
+                                lat = String.IsNullOrEmpty(reader["lat"]?.ToString()) ? 0 : Convert.ToDouble(reader["lat"]),
+                                lon = String.IsNullOrEmpty(reader["lon"]?.ToString()) ? 0 : Convert.ToDouble(reader["lon"]),
+                                boundary = reader["boundary"]?.ToString(),
+                                contour = reader["contour"]?.ToString(),
+                                elevation = reader["elevation"]?.ToString(),
+                                field = reader["field"]?.ToString(),
+                                flags = reader["flags"]?.ToString(),
+                                recPath = reader["recPath"]?.ToString(),
+                                sections = reader["sections"]?.ToString(),
+                                abLines = reader["abLines"]?.ToString(),
+                                curveLines = reader["curveLines"]?.ToString(),
+                                tram = reader["tram"]?.ToString(),
+                                headlines = reader["headlines"]?.ToString(),
+                                headland = reader["headland"]?.ToString(),
+                                backPic = reader["backPic"]?.ToString(),
+                                rateMap = reader["rateMap"]?.ToString(),
+                                createDate = reader["create_date"]?.ToString(),
+                                modDate = reader["mod_date"]?.ToString(),
+                                description = reader["description"]?.ToString(),
+                                areaRemain = String.IsNullOrEmpty(reader["area_remain"]?.ToString()) ? 0 : Convert.ToDouble(reader["area_remain"]),
+                                areaDone = String.IsNullOrEmpty(reader["area_done"]?.ToString()) ? 0 : Convert.ToDouble(reader["area_done"]),
+                                guid = reader["guid"]?.ToString(),
+                                toolId = reader["tool_id"]?.ToString(),
+                                vehicleId = reader["vehicle_id"]?.ToString(),
+                                clientName = reader["vehicle_id"]?.ToString(),
+                                vehicleSettingName = reader["vehicle_setting_name"]?.ToString(),
+                            };
+                            //rf.desc = $"#{rf.id} {rf.name} d:{rf.distance.ToString("0.00", CultureInfo.InvariantCulture)} m";
+                            list.Add(rf);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Error: " + ex.Message);
+                return list;
+            }
+
+            return list;
+        }
+
+        public TaskCustom GetTaskByName(string name)
+        {
+            List<TaskCustom> listOfTasks = GetListOfTasksc();
+            TaskCustom task = listOfTasks.FirstOrDefault(t => t.name == name);
+            return task;
+        }
+
+        public void SetMainFormProps()
+        {
+           TaskCustom tk =  GetTaskByName(mf.currentFieldDirectory);
+            if(tk == null) return;  
+            mf.taskGuid = tk?.guid;
+            mf.toolGuid = tk?.toolId;
+            mf.vehicleGuid = tk?.vehicleId;
+            mf.vehicleFileName = tk?.vehicleSettingName;
+            mf.clientName = tk?.clientName;
+        }
+
+
+
         private void btnSave_Click(object sender, EventArgs e)
         {
             //fill something in
@@ -112,9 +315,17 @@ namespace AgOpenGPS.Forms.Field
                     MessageBox.Show("No selected ref field, try again", gStr.gsError, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
+                var selectedTool = listOfToolsCmb.SelectedItem as ToolCustom;
+
+                mf.toolGuid = selectedTool.guid;
+                var selectedVehicle = listOfVehiclesCmb.SelectedItem as VehicleCustom;
+                mf.vehicleGuid = selectedVehicle.guid;
+                mf.fieldGuid = selectedRefField.guid;
+
                 CreateTaskDir(taskName);
                 CreateTaskFiles(selectedRefField, dirNewField);
                 mf.FileOpenField(dirNewField + "\\Field.txt");
+                CreateNewTaskEntryInDB(selectedRefField);
 
             }
             catch (Exception ex)
@@ -156,9 +367,9 @@ namespace AgOpenGPS.Forms.Field
             }
         }
 
-        private string GetDBFieldConnectionString()
+        private string GetDBFieldConnectionString(string dbName)
         {
-            string subPathToDbs = "dbs\\fields.db";
+            string subPathToDbs = $"dbs\\{dbName}.db";
             var pathToDb = $"{mf.baseDirectory}{subPathToDbs}";
             string connectionString = $"Data Source={pathToDb};Version=3;";
             return connectionString;
@@ -167,9 +378,10 @@ namespace AgOpenGPS.Forms.Field
         private List<RefField> GetListOfRefFields()
         {
             List<RefField> list = new List<RefField>();
+            if(mf.baseDirectory == null) return list;
             try
             {
-                using (SQLiteConnection connection = new SQLiteConnection(GetDBFieldConnectionString()))
+                using (SQLiteConnection connection = new SQLiteConnection(GetDBFieldConnectionString("fields")))
                 {
                     connection.Open();
                     var lat = mf.pn.latitude;
@@ -205,11 +417,89 @@ namespace AgOpenGPS.Forms.Field
                                 createDate = reader["create_date"]?.ToString(),
                                 modDate = reader["mod_date"]?.ToString(),
                                 description = reader["description"]?.ToString(),
-                                area = String.IsNullOrEmpty(reader["area"]?.ToString()) ? 0 : Convert.ToDouble(reader["area"])
+                                area = String.IsNullOrEmpty(reader["area"]?.ToString()) ? 0 : Convert.ToDouble(reader["area"]),
+                                guid = reader["guid"]?.ToString()
 
                             };
                             rf.desc = $"#{rf.id} {rf.name} d:{rf.distance.ToString("0.00", CultureInfo.InvariantCulture)} m";
                             list.Add(rf);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Error: " + ex.Message);
+                return list;
+            }
+
+            return list;
+        }
+
+        private List<VehicleCustom> GetListOfVehicles()
+        {
+            List<VehicleCustom> list = new List<VehicleCustom>();
+            try
+            {
+                using (SQLiteConnection connection = new SQLiteConnection(GetDBFieldConnectionString("tasks")))
+                {
+                    connection.Open();
+                    string sql = $"SELECT * FROM vehicles;";
+                    using (SQLiteCommand command = new SQLiteCommand(sql, connection))
+                    using (SQLiteDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var vehicle = new VehicleCustom()
+                            {
+                                id = Convert.ToInt32(reader["id"]),
+                                name = reader["name"].ToString(),
+                                description = reader["description"].ToString(),
+                                guid = reader["guid"].ToString(),
+                                createDate = reader["create_date"].ToString(),
+                                modDate = reader["mod_date"].ToString(),
+                                settings = reader["settings"].ToString()
+                            };
+                            list.Add(vehicle);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Error: " + ex.Message);
+                return list;
+            }
+
+            return list;
+        }
+
+
+        private List<ToolCustom> GetListOfTool()
+        {
+            List<ToolCustom> list = new List<ToolCustom>();
+            try
+            {
+                using (SQLiteConnection connection = new SQLiteConnection(GetDBFieldConnectionString("tasks")))
+                {
+                    connection.Open();
+                    string sql = $"SELECT * FROM tools;";
+                    using (SQLiteCommand command = new SQLiteCommand(sql, connection))
+                    using (SQLiteDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var tool = new ToolCustom()
+                            {
+                                id = Convert.ToInt32(reader["id"]),
+                                name = reader["name"].ToString(),
+                                description = reader["description"].ToString(),
+                                guid = reader["guid"].ToString(),
+                                createDate = reader["create_date"].ToString(),
+                                modDate = reader["mod_date"].ToString(),
+                                settings = reader["settings"].ToString()
+                            };
+                            list.Add(tool);
                         }
                     }
                 }
@@ -250,6 +540,7 @@ namespace AgOpenGPS.Forms.Field
                     $"Create date: {selectedRefField.createDate}\r\n" +
                     $"Modify date: {selectedRefField.modDate}\r\n" +
                     $"ID: {selectedRefField.id}\r\n" +
+                    $"GUID: {selectedRefField.guid}\r\n" +
                     $"Lat: {selectedRefField.lat.ToString("0.000000", CultureInfo.InvariantCulture)}\r\n" +
                     $"Lon: {selectedRefField.lon.ToString("0.000000", CultureInfo.InvariantCulture)}\r\n";
                 return info;
@@ -261,8 +552,8 @@ namespace AgOpenGPS.Forms.Field
         {
 
             SetTaskName();
-            selectedRefFieldInfoRichTxtBox.Text = GetInfoFromSelectedRefField(); 
-            
+            selectedRefFieldInfoRichTxtBox.Text = GetInfoFromSelectedRefField();
+
         }
 
         private string CreateTaskDir(string taskName)
@@ -421,9 +712,9 @@ namespace AgOpenGPS.Forms.Field
             return line;
         }
 
-        private RefField ParseTaskIntoRefField(string pathToTaskDir)
+        public BasicTask ParseTaskIntoRefField(string pathToTaskDir)
         {
-            RefField rf = new RefField();
+            BasicTask rf = new BasicTask();
             string fileName = "\\Field.txt";
             if (File.Exists(pathToTaskDir + fileName))
             {
@@ -502,19 +793,19 @@ namespace AgOpenGPS.Forms.Field
         private void SaveRefFieldIntoDB(RefField rf)
         {
 
-            using (SQLiteConnection connection = new SQLiteConnection(GetDBFieldConnectionString()))
+            using (SQLiteConnection connection = new SQLiteConnection(GetDBFieldConnectionString("fields")))
             {
                 connection.Open();
                 var lat = mf.pn.latitude;
                 var lon = mf.pn.longitude;
 
-                string insertSql = "INSERT INTO ref_fields (lat, lon, name, field, boundary, contour, elevation, flags, recPath, sections, abLines, curveLines, tram, headlines, headland, backPic, rateMap, create_date,  description, area) " +
-                    "VALUES (@lat, @lon, @name, @field, @boundary, @contour, @elevation, @flags, @recPath, @sections, @abLines, @curveLines,@tram,@headlines,@headland,@backPic,@rateMap, @createDate, @description, @area)";
+                string insertSql = "INSERT INTO ref_fields (lat, lon, name, field, boundary, contour, elevation, flags, recPath, sections, abLines, curveLines, tram, headlines, headland, backPic, rateMap, create_date,  description, area, guid) " +
+                    "VALUES (@lat, @lon, @name, @field, @boundary, @contour, @elevation, @flags, @recPath, @sections, @abLines, @curveLines,@tram,@headlines,@headland,@backPic,@rateMap, @createDate, @description, @area, @guid)";
 
                 using (var command = new SQLiteCommand(insertSql, connection))
                 {
-                    command.Parameters.AddWithValue("@lat", lat);
-                    command.Parameters.AddWithValue("@lon", lon);
+                    command.Parameters.AddWithValue("@lat", rf.lat);
+                    command.Parameters.AddWithValue("@lon", rf.lon);
                     command.Parameters.AddWithValue("@name", rf.name);
                     command.Parameters.AddWithValue("@field", rf.field);
                     command.Parameters.AddWithValue("@boundary", rf.boundary);
@@ -534,6 +825,8 @@ namespace AgOpenGPS.Forms.Field
                     //command.Parameters.AddWithValue("@modDate", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
                     command.Parameters.AddWithValue("@description", rf.description);
                     command.Parameters.AddWithValue("@area", rf.area);
+                    command.Parameters.AddWithValue("@guid", Guid.NewGuid().ToString());
+
 
                     command.ExecuteNonQuery();
                 }
@@ -588,11 +881,13 @@ namespace AgOpenGPS.Forms.Field
 
 
                         var rf = ParseTaskIntoRefField(pathToTaskDictionary);
-                        rf.name = newRefFieldName;
-                        rf.area = area;
-                        rf.lat = point.Item1;
-                        rf.lon = point.Item2;
-                        SaveRefFieldIntoDB(rf);
+                        RefField refField = new RefField();
+                        refField = rf as RefField;
+                        refField.name = newRefFieldName;
+                        refField.area = area;
+                        refField.lat = point.Item1;
+                        refField.lon = point.Item2;
+                        SaveRefFieldIntoDB(refField);
 
                     }
 
@@ -610,14 +905,63 @@ namespace AgOpenGPS.Forms.Field
                 MessageBox.Show("Error creating ref field: " + ex.Message, gStr.gsError, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        public TaskCustom CastBasicTaskIntoTaskCustom(BasicTask basic)
+        {
+            return new TaskCustom
+            {
+                id = basic.id,
+                name = basic.name,
+                guid = basic.guid,
+                lat = basic.lat,
+                lon = basic.lon,
+                boundary = basic.boundary,
+                contour = basic.contour,
+                elevation = basic.elevation,
+                field = basic.field,
+                flags = basic.flags,
+                recPath = basic.recPath,
+                sections = basic.sections,
+                abLines = basic.abLines,
+                curveLines = basic.curveLines,
+                tram = basic.tram,
+                headlines = basic.headlines,
+                headland = basic.headland,
+                backPic = basic.backPic,
+                rateMap = basic.rateMap,
+                createDate = basic.createDate,
+                modDate = basic.modDate,
+                description = basic.description,
+
+            };
+        }
+
+
     }
 
-    public class RefField
+    public class RefField: BasicTask
     {
-        public string name { get; set; }
-        public int id { get; set; }
-        public double distance { get; set; }
         public string desc { get; set; }
+        public string description { get; set; }
+        public double area { get; set; }
+    }
+
+    public class TaskCustom: BasicTask
+    {
+        public double areaDone { get; set; }
+        public double areaRemain { get; set; }
+        public string toolId { get; set; }
+        public string vehicleId { get; set; }
+        public string vehicleSettingName { get; set; }
+        public string clientName { get; set; }
+    }
+    public class BasicTask
+    {
+        public double distance { get; set; }
+        public string description { get; set; }
+        public string name { get; set; }
+        public string guid { get; set; }
+        public int id { get; set; }
         public double lat { get; set; }
         public double lon { get; set; }
         public string boundary { get; set; }
@@ -636,10 +980,28 @@ namespace AgOpenGPS.Forms.Field
         public string rateMap { get; set; }
         public string createDate { get; set; }
         public string modDate { get; set; }
+
+    }
+
+    public class VehicleCustom
+    {
+        public int id { get; set; }
+        public string name { get; set; }
         public string description { get; set; }
-        public double area { get; set; }
+        public string guid { get; set; }
+        public string createDate { get; set; }
+        public string modDate { get; set; }
+        public string settings { get; set; }
+    }
 
-
-
+    public class ToolCustom
+    {
+        public int id { get; set; }
+        public string name { get; set; }
+        public string description { get; set; }
+        public string guid { get; set; }
+        public string createDate { get; set; }
+        public string modDate { get; set; }
+        public string settings { get; set; }
     }
 }
