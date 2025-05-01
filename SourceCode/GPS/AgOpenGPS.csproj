@@ -222,6 +222,7 @@
       <DependentUpon>CBoundaryList.cs</DependentUpon>
     </Compile>
     <Compile Include="Classes\CTool.cs" />
+    <Compile Include="Classes\MQTTMessages.cs" />
     <Compile Include="Forms\CustomDataSender.cs">
       <SubType>Form</SubType>
     </Compile>

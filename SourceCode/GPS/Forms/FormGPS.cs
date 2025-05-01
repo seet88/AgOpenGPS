@@ -260,6 +260,8 @@ namespace AgOpenGPS
 
         public FormNewFieldCustom formNewFieldCustom;
 
+        public MQTTMessages customMqttMessages;
+
         #endregion // Class Props and instances
 
         public FormGPS()
@@ -359,6 +361,9 @@ namespace AgOpenGPS
 
             //form field custom
             formNewFieldCustom = new FormNewFieldCustom(this);
+
+            //mqtt messages
+            customMqttMessages = new MQTTMessages(this);
         }
 
         private void FormGPS_Load(object sender, EventArgs e)

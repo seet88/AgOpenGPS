@@ -1542,19 +1542,23 @@ namespace AgOpenGPS
         {
             if (DateTime.Now - lastMsgSendTime > TimeSpan.FromSeconds(3))
             {
-                string msg = CreateMessageOfVehicle();
-                this.SendCustomData(msg);
+                //string msg = CreateMessageOfVehicle();
+                //this.SendCustomData(msg);
 
-                this.customDataSender.SendDataViaMQTT(msg);
+                //this.customDataSender.SendDataViaMQTT(msg);
+                this.customMqttMessages.SendSectionsMessage();
 
                 lastMsgSendTime = DateTime.Now;
             }
             if(DateTime.Now - lastMsgLocalGPSStaticsSendTime > TimeSpan.FromSeconds(50))
             {                
-                pn.SendMsgLocalGPSStaticValues();
-                bnd.SendMsgLocalBoundaryValues();
-                this.trk.SendMsgLocalLinesValues();
+                //pn.SendMsgLocalGPSStaticValues();
+                //bnd.SendMsgLocalBoundaryValues();
+                //this.trk.SendMsgLocalLinesValues();
                 lastMsgLocalGPSStaticsSendTime = DateTime.Now;
+                //this.customMqttMessages.SendTaskMetadata();
+
+
             }
         }
 

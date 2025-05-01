@@ -97,7 +97,8 @@ namespace AgOpenGPS.Classes
                 if (z == null) return Task.CompletedTask;
                 var payload = Encoding.UTF8.GetString(z);
                 Debug.WriteLine($"Received message: {payload}");
-                MqttMessage obj = JsonSerializer.Deserialize<MqttMessage>(payload);
+                //MqttMessage obj = JsonSerializer.Deserialize<MqttMessage>(payload);
+                ParseIncomingCommnads(payload);
                 return Task.CompletedTask;
             };
 
@@ -143,10 +144,58 @@ namespace AgOpenGPS.Classes
 
         }
 
+        public void ParseIncomingCommnads(string payload)
+        {
+            // Parse the incoming commands from the payload
+            // You can implement your logic here to handle different commands
+            Debug.WriteLine($"Received command: {payload}");
+            MqttReceiveMessage obj = JsonSerializer.Deserialize<MqttReceiveMessage>(payload);
+            if (obj == null) return;
+            switch (obj.msgType)
+            {
+                case MQTTCommandType.sendTaskData:
+                    // Handle sendTaskData command
+                    Debug.WriteLine("Received sendTaskData command.");
+                    mf.customMqttMessages.SendTaskMetadata();
+                    break;
+                case MQTTCommandType.sendlocalCordsToGPSStatics:
+                    // Handle sendlocalCordsToGPSStatics command
+                    Debug.WriteLine("Received sendlocalCordsToGPSStatics command.");
+                    break;
+                case MQTTCommandType.sendBoundary:
+                    // Handle sendBoundary command
+                    Debug.WriteLine("Received sendBoundary command.");
+                    break;
+                case MQTTCommandType.sendCurrentNavigationLine:
+                    // Handle sendCurrentNavigationLine command
+                    Debug.WriteLine("Received sendCurrentNavigationLine command.");
+                    break;
+                case MQTTCommandType.sendSectionsInfo:
+                    // Handle sendSectionsInfo command
+                    Debug.WriteLine("Received sendSectionsInfo command.");
+                    break;
+
+                default:
+                    Debug.WriteLine("Unknown command type.");
+                    break;
+            }
+        }
+
 
 
 
     }
+
+    public enum MQTTCommandType
+    {
+        sendTaskData,
+        sendlocalCordsToGPSStatics,
+        sendBoundary,
+        sendCurrentNavigationLine,
+        sendSectionsInfo,
+
+    }
+
 
     public enum MQTTMessageType
     {
@@ -156,6 +205,14 @@ namespace AgOpenGPS.Classes
         localCordsToGPSStatics,
         boundary,
         hello
+    }
+
+    public class MqttReceiveMessage
+    {
+        public MQTTCommandType msgType { get; set; }
+        public object value { get; set; }
+        public string timestamp { get; set; }
+        public string clientName { get; set; }
     }
 
     public class MqttMessage
