@@ -25,7 +25,7 @@ namespace AgOpenGPS.Classes
         private string traccarClientId = "";
 
         private string topic = "test1";
-        private string subTopic = "customCommnads";
+        private string subTopic = "customCommands";
 
 
         IMqttClient mqttClient;
@@ -93,12 +93,12 @@ namespace AgOpenGPS.Classes
             Console.WriteLine("Subscribed to topic 'test/topic'. Waiting for messages...");
             mqttClient.ApplicationMessageReceivedAsync += e =>
             {
-                var z = e.ApplicationMessage.PayloadSegment.Array;
-                if (z == null) return Task.CompletedTask;
-                var payload = Encoding.UTF8.GetString(z);
-                Debug.WriteLine($"Received message: {payload}");
+                var payloadBytes = e.ApplicationMessage.PayloadSegment.Array;
+                if (payloadBytes == null) return Task.CompletedTask;
+                var payloadString = Encoding.UTF8.GetString(payloadBytes);
+                Debug.WriteLine($"Received message: {payloadString}");
                 //MqttMessage obj = JsonSerializer.Deserialize<MqttMessage>(payload);
-                ParseIncomingCommnads(payload);
+                ParseIncomingCommnads(payloadString);
                 return Task.CompletedTask;
             };
 
@@ -158,7 +158,12 @@ namespace AgOpenGPS.Classes
                     Debug.WriteLine("Received sendTaskData command.");
                     mf.customMqttMessages.SendTaskMetadata();
                     break;
-                case MQTTCommandType.sendlocalCordsToGPSStatics:
+                case MQTTCommandType.sendMainTablesVFT:
+                    // Handle sendMainTablesVFT command
+                    Debug.WriteLine("Received sendMainTablesVFT command.");
+                    mf.customMqttMessages.SendMainTablesVFT();
+                    break;
+                case MQTTCommandType.sendLocalCordsToGPSStatics:
                     // Handle sendlocalCordsToGPSStatics command
                     Debug.WriteLine("Received sendlocalCordsToGPSStatics command.");
                     break;
@@ -189,10 +194,11 @@ namespace AgOpenGPS.Classes
     public enum MQTTCommandType
     {
         sendTaskData,
-        sendlocalCordsToGPSStatics,
+        sendLocalCordsToGPSStatics,
         sendBoundary,
         sendCurrentNavigationLine,
         sendSectionsInfo,
+        sendMainTablesVFT,
 
     }
 
@@ -204,7 +210,9 @@ namespace AgOpenGPS.Classes
         currentCurveLine,
         localCordsToGPSStatics,
         boundary,
-        hello
+        hello,
+        taskMetadata,
+        mainTablesVFT
     }
 
     public class MqttReceiveMessage
@@ -212,7 +220,7 @@ namespace AgOpenGPS.Classes
         public MQTTCommandType msgType { get; set; }
         public object value { get; set; }
         public string timestamp { get; set; }
-        public string clientName { get; set; }
+        public string clientId { get; set; }
     }
 
     public class MqttMessage
@@ -220,6 +228,6 @@ namespace AgOpenGPS.Classes
         public MQTTMessageType msgType { get; set; }
         public object value { get; set; }
         public string timestamp { get; set; }
-        public string clientName { get; set; }
+        public string clientId { get; set; }
     }
 }

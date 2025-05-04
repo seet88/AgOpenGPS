@@ -24,7 +24,7 @@ namespace AgOpenGPS
         public string fieldGuid = "";
         public string vehicleGuid = "";
         public string toolGuid = "";
-        public string clientName = "";
+        public string clientId = "Fend716-test-1";
         public string taskGuid = "";
         #region Right Menu
         public bool isABCyled = false;

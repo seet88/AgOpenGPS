@@ -42,12 +42,12 @@ namespace AgOpenGPS.Forms.Field
             listOfVehiclesCmb.DisplayMember = "name";
             listOfVehiclesCmb.Items.Clear();
             listOfVehiclesCmb.Items.AddRange(GetListOfVehicles().ToArray());
-        }   
+        }
         private void InitTools()
         {
             listOfToolsCmb.DisplayMember = "name";
             listOfToolsCmb.Items.Clear();
-            listOfToolsCmb.Items.AddRange(GetListOfTool().ToArray());
+            listOfToolsCmb.Items.AddRange(GetListOfTools().ToArray());
         }
 
         private void FormNewFieldCustom_Load(object sender, EventArgs e)
@@ -139,15 +139,15 @@ namespace AgOpenGPS.Forms.Field
                     command.Parameters.AddWithValue("@vehicleId", mf.vehicleGuid);
                     command.Parameters.AddWithValue("@vehicleSettingName", mf.vehicleFileName);
                     command.Parameters.AddWithValue("@guid", Guid.NewGuid().ToString());
-                    command.Parameters.AddWithValue("@clientName", mf.clientName);
+                    command.Parameters.AddWithValue("@clientName", mf.clientId);
 
 
-                    command.ExecuteNonQuery();                    
+                    command.ExecuteNonQuery();
                 }
                 // Get the ID of the newly inserted row
                 using (var command = new SQLiteCommand("select guid from tasks where id = (SELECT last_insert_rowid())", connection))
                 {
-                    string  newGuid = command.ExecuteScalar()?.ToString();
+                    string newGuid = command.ExecuteScalar()?.ToString();
                     Console.WriteLine($"New row ID: {newGuid}");
                     mf.taskGuid = newGuid;
                 }
@@ -198,7 +198,7 @@ namespace AgOpenGPS.Forms.Field
                     command.ExecuteNonQuery();
                 }
                 // Get the ID of the newly inserted row
-                
+
 
             }
         }
@@ -277,13 +277,13 @@ namespace AgOpenGPS.Forms.Field
 
         public void SetMainFormProps()
         {
-           TaskCustom tk =  GetTaskByName(mf.currentFieldDirectory);
-            if(tk == null) return;  
+            TaskCustom tk = GetTaskByName(mf.currentFieldDirectory);
+            if (tk == null) return;
             mf.taskGuid = tk?.guid;
             mf.toolGuid = tk?.toolId;
             mf.vehicleGuid = tk?.vehicleId;
             mf.vehicleFileName = tk?.vehicleSettingName;
-            mf.clientName = tk?.clientName;
+            //mf.clientId = tk?.clientName;
         }
 
 
@@ -375,10 +375,10 @@ namespace AgOpenGPS.Forms.Field
             return connectionString;
         }
 
-        private List<RefField> GetListOfRefFields()
+        public List<RefField> GetListOfRefFields()
         {
             List<RefField> list = new List<RefField>();
-            if(mf.baseDirectory == null) return list;
+            if (mf.baseDirectory == null) return list;
             try
             {
                 using (SQLiteConnection connection = new SQLiteConnection(GetDBFieldConnectionString("fields")))
@@ -436,7 +436,7 @@ namespace AgOpenGPS.Forms.Field
             return list;
         }
 
-        private List<VehicleCustom> GetListOfVehicles()
+        public List<VehicleCustom> GetListOfVehicles()
         {
             List<VehicleCustom> list = new List<VehicleCustom>();
             try
@@ -475,7 +475,7 @@ namespace AgOpenGPS.Forms.Field
         }
 
 
-        private List<ToolCustom> GetListOfTool()
+        public List<ToolCustom> GetListOfTools()
         {
             List<ToolCustom> list = new List<ToolCustom>();
             try
@@ -881,12 +881,28 @@ namespace AgOpenGPS.Forms.Field
 
 
                         var rf = ParseTaskIntoRefField(pathToTaskDictionary);
-                        RefField refField = new RefField();
-                        refField = rf as RefField;
-                        refField.name = newRefFieldName;
-                        refField.area = area;
-                        refField.lat = point.Item1;
-                        refField.lon = point.Item2;
+                        RefField refField = new RefField()
+                        {
+                            name = newRefFieldName,
+                            field = rf.field,
+                            boundary = rf.boundary,
+                            contour = rf.contour,
+                            elevation = rf.elevation,
+                            flags = rf.flags,
+                            recPath = rf.recPath,
+                            sections = rf.sections,
+                            abLines = rf.abLines,
+                            curveLines = rf.curveLines,
+                            tram = rf.tram,
+                            headlines = rf.headlines,
+                            headland = rf.headland,
+                            backPic = rf.backPic,
+                            rateMap = rf.rateMap,
+                            createDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+                            area = area,
+                            lat = point.Item1,
+                            lon = point.Item2,
+                        };
                         SaveRefFieldIntoDB(refField);
 
                     }
@@ -939,14 +955,13 @@ namespace AgOpenGPS.Forms.Field
 
     }
 
-    public class RefField: BasicTask
+    public class RefField : BasicTask
     {
         public string desc { get; set; }
-        public string description { get; set; }
         public double area { get; set; }
     }
 
-    public class TaskCustom: BasicTask
+    public class TaskCustom : BasicTask
     {
         public double areaDone { get; set; }
         public double areaRemain { get; set; }
@@ -955,13 +970,9 @@ namespace AgOpenGPS.Forms.Field
         public string vehicleSettingName { get; set; }
         public string clientName { get; set; }
     }
-    public class BasicTask
+    public class BasicTask : BasicProps
     {
         public double distance { get; set; }
-        public string description { get; set; }
-        public string name { get; set; }
-        public string guid { get; set; }
-        public int id { get; set; }
         public double lat { get; set; }
         public double lon { get; set; }
         public string boundary { get; set; }
@@ -978,12 +989,10 @@ namespace AgOpenGPS.Forms.Field
         public string headland { get; set; }
         public string backPic { get; set; }
         public string rateMap { get; set; }
-        public string createDate { get; set; }
-        public string modDate { get; set; }
 
     }
 
-    public class VehicleCustom
+    public class BasicProps
     {
         public int id { get; set; }
         public string name { get; set; }
@@ -991,17 +1000,15 @@ namespace AgOpenGPS.Forms.Field
         public string guid { get; set; }
         public string createDate { get; set; }
         public string modDate { get; set; }
+    }
+
+    public class VehicleCustom : BasicProps
+    {
         public string settings { get; set; }
     }
 
-    public class ToolCustom
+    public class ToolCustom : BasicProps
     {
-        public int id { get; set; }
-        public string name { get; set; }
-        public string description { get; set; }
-        public string guid { get; set; }
-        public string createDate { get; set; }
-        public string modDate { get; set; }
         public string settings { get; set; }
     }
 }

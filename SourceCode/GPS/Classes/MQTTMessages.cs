@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AgOpenGPS.Forms.Field;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,14 +14,14 @@ namespace AgOpenGPS.Classes
         private readonly FormGPS mf;
         public MQTTMessages(FormGPS _f)
         {
-             mf = _f;
+            mf = _f;
         }
 
         public object GetLocalGPSStaticValues(FormGPS mf)
         {
             Object obj = new
             {
-                mPerDegreeLat =mf.pn.mPerDegreeLat,
+                mPerDegreeLat = mf.pn.mPerDegreeLat,
                 mPerDegreeLon = mf.pn.mPerDegreeLon,
                 lonStart = mf.pn.lonStart,
                 latStart = mf.pn.latStart,
@@ -39,7 +40,7 @@ namespace AgOpenGPS.Classes
 
         private object CastVect2PositionToObj(vec2 v)
         {
-            return new { easting = PrepareValue(v.easting), northing = PrepareValue(v.northing)};
+            return new { easting = PrepareValue(v.easting), northing = PrepareValue(v.northing) };
         }
         private object GetLocalBoundry(FormGPS mf)
         {
@@ -79,7 +80,8 @@ namespace AgOpenGPS.Classes
         {
             Object obj = new
             {
-                ABlines = mf.trk.gArr.Where(g => g.curvePts.Count == 0).Select( line => new {
+                abLines = mf.trk.gArr.Where(g => g.curvePts.Count == 0).Select(line => new
+                {
                     name = line.name,
                     orgPointAB = new { pointA = CastVect2PositionToObj(line.ptA), pointB = CastVect2PositionToObj(line.ptB) },
                     extentPointAB = new { pointA = CastVect2PositionToObj(line.endPtA), pointB = CastVect2PositionToObj(line.endPtB) },
@@ -108,7 +110,7 @@ namespace AgOpenGPS.Classes
             };
 
             return obj;
-        }   
+        }
 
         public object GetTaskData(FormGPS mf)
         {
@@ -119,7 +121,7 @@ namespace AgOpenGPS.Classes
 
             Object obj = new
             {
-                localGPSStaticValaues = GetLocalGPSStaticValues(mf),
+                localCordsToGPSStatics = GetLocalGPSStaticValues(mf),
                 boundary = boundary,
                 taskMetadata = GetTaskMetadata(mf),
                 referenceNavigationLines = GetReferenceNavigationLines(mf),
@@ -159,7 +161,7 @@ namespace AgOpenGPS.Classes
         {
             var obj = GetTaskData(mf);
             var c = mf.trk;
-            string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.localCordsToGPSStatics, value = obj, timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
+            string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.taskMetadata, value = obj, timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), clientId = mf.clientId });
             var z = message.Length;
             var res = mf.customDataSender.SendDataViaMQTT(message);
             return true;
@@ -168,7 +170,30 @@ namespace AgOpenGPS.Classes
         public void SendSectionsMessage()
         {
             var obj = GetSecttions(mf);
-            string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.sectionsInfo, value = obj, timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
+            string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.sectionsInfo, value = obj, timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), clientId = mf.clientId });
+            var z = message.Length;
+            mf.customDataSender.SendDataViaMQTT(message);
+        }
+
+        private object GetMainTablesVFT(FormGPS mf)
+        {
+            var listOfRefFields = mf.formNewFieldCustom.GetListOfRefFields();
+            var listOfTools = mf.formNewFieldCustom.GetListOfTools();
+            var listOfVehicles = mf.formNewFieldCustom.GetListOfVehicles();
+
+            Object obj = new
+            {
+                refFields = listOfRefFields.Select(rf => new { name = rf.name, guid = rf.guid, desc = rf.description, area = rf.area, modDate = rf.modDate, createDate = rf.createDate, lat = rf.lat, lon = rf.lon }),
+                tools = listOfTools.Select(t => new { name = t.name, guid = t.guid, desc = t.description, modDate = t.modDate, createDate = t.createDate }),
+                vehicles = listOfVehicles.Select(v => new { name = v.name, guid = v.guid, desc = v.description, modDate = v.modDate, createDate = v.createDate }),
+            };
+            return obj;
+        }
+
+        public void SendMainTablesVFT()
+        {
+            var obj = GetMainTablesVFT(mf);
+            string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.mainTablesVFT, value = obj, timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), clientId = mf.clientId });
             var z = message.Length;
             mf.customDataSender.SendDataViaMQTT(message);
         }
