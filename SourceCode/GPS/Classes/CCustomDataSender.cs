@@ -29,7 +29,7 @@ namespace AgOpenGPS.Classes
 
 
         IMqttClient mqttClient;
-
+                
         public CCustomDataSender(FormGPS _f)
         {
             //constructor
@@ -42,7 +42,7 @@ namespace AgOpenGPS.Classes
 
             traccarUrl = Properties.Settings.Default.setTraccar_url;
             traccarClientId = Properties.Settings.Default.setTraccar_client_id;
-            InitMQTTClient();
+            InitMQTTClient();   
         }
 
         public async void InitMQTTClient()
@@ -124,7 +124,8 @@ namespace AgOpenGPS.Classes
 
         public async Task<bool> SendDataViaMQTT(string payload)
         {
-            return await SendDataViaMQTTWithTopic(topic, payload);
+            var res =  await SendDataViaMQTTWithTopic(topic, payload);
+            return res;
         }
 
         public async Task<bool> SendDataViaMQTTWithTopic(string topic, string payload)
@@ -179,12 +180,17 @@ namespace AgOpenGPS.Classes
                     // Handle sendSectionsInfo command
                     Debug.WriteLine("Received sendSectionsInfo command.");
                     break;
+                case MQTTCommandType.sendInputIoTProps:
+                    // Handle sendInputIoTProps command
+                    Debug.WriteLine("Received sendInputIoTProps command.");
+                    break;
 
                 default:
                     Debug.WriteLine("Unknown command type.");
                     break;
             }
         }
+
 
 
 
@@ -199,6 +205,7 @@ namespace AgOpenGPS.Classes
         sendCurrentNavigationLine,
         sendSectionsInfo,
         sendMainTablesVFT,
+        sendInputIoTProps,
 
     }
 
