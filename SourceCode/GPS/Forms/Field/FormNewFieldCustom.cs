@@ -109,8 +109,8 @@ namespace AgOpenGPS.Forms.Field
             {
                 connection.Open();
 
-                string insertSql = "INSERT INTO tasks (lat, lon, name, field, boundary, contour, elevation, flags, recPath, sections, abLines, curveLines, tram, headlines, headland, backPic, rateMap, create_date,  description, area_remain, tool_id, vehicle_id, vehicle_setting_name, guid, client_name) " +
-                    "VALUES (@lat, @lon, @name, @field, @boundary, @contour, @elevation, @flags, @recPath, @sections, @abLines, @curveLines,@tram,@headlines,@headland,@backPic,@rateMap, @createDate, @description, @area, @toolId, @vehicleId, @vehicleSettingName, @guid, @clientName)";
+                string insertSql = "INSERT INTO tasks (lat, lon, name, field, boundary, contour, elevation, flags, recPath, sections, abLines, curveLines, tram, headlines, headland, backPic, rateMap, create_date,  description, area_remain, tool_id, vehicle_id, vehicle_setting_name, guid, client_name, field_id) " +
+                    "VALUES (@lat, @lon, @name, @field, @boundary, @contour, @elevation, @flags, @recPath, @sections, @abLines, @curveLines,@tram,@headlines,@headland,@backPic,@rateMap, @createDate, @description, @area, @toolId, @vehicleId, @vehicleSettingName, @guid, @clientName, @fieldId)";
 
                 using (var command = new SQLiteCommand(insertSql, connection))
                 {
@@ -140,6 +140,7 @@ namespace AgOpenGPS.Forms.Field
                     command.Parameters.AddWithValue("@vehicleSettingName", mf.vehicleFileName);
                     command.Parameters.AddWithValue("@guid", Guid.NewGuid().ToString());
                     command.Parameters.AddWithValue("@clientName", mf.clientId);
+                    command.Parameters.AddWithValue("@fieldId", rf.guid);
 
 
                     command.ExecuteNonQuery();
@@ -223,7 +224,7 @@ namespace AgOpenGPS.Forms.Field
                         {
                             var rf = new TaskCustom()
                             {
-                                name = reader["name"].ToString(),
+                                name = reader["name"]?.ToString(),
                                 id = Convert.ToInt32(reader["id"]),
                                 distance = String.IsNullOrEmpty(reader["distance"]?.ToString()) ? 999999 : Convert.ToDouble(reader["distance"]),
                                 lat = String.IsNullOrEmpty(reader["lat"]?.ToString()) ? 0 : Convert.ToDouble(reader["lat"]),
@@ -252,9 +253,11 @@ namespace AgOpenGPS.Forms.Field
                                 vehicleId = reader["vehicle_id"]?.ToString(),
                                 clientName = reader["vehicle_id"]?.ToString(),
                                 vehicleSettingName = reader["vehicle_setting_name"]?.ToString(),
+                                fieldId = reader["field_id"]?.ToString(),
                             };
                             //rf.desc = $"#{rf.id} {rf.name} d:{rf.distance.ToString("0.00", CultureInfo.InvariantCulture)} m";
                             list.Add(rf);
+                            //Debug.WriteLine($"Loaded task: {rf.name} --- {reader["name"]}");
                         }
                     }
                 }
@@ -283,7 +286,9 @@ namespace AgOpenGPS.Forms.Field
             mf.toolGuid = tk?.toolId;
             mf.vehicleGuid = tk?.vehicleId;
             mf.vehicleFileName = tk?.vehicleSettingName;
+            mf.fieldGuid = tk?.fieldId;
             //mf.clientId = tk?.clientName;
+            this.mf.customMqttMessages.SendTaskMetadata();
         }
 
 
@@ -326,6 +331,9 @@ namespace AgOpenGPS.Forms.Field
                 CreateTaskFiles(selectedRefField, dirNewField);
                 mf.FileOpenField(dirNewField + "\\Field.txt");
                 CreateNewTaskEntryInDB(selectedRefField);
+
+                Task.Delay(2000).ContinueWith(t => mf.customMqttMessages.SendTaskMetadata());
+                
 
             }
             catch (Exception ex)
@@ -969,6 +977,7 @@ namespace AgOpenGPS.Forms.Field
         public string vehicleId { get; set; }
         public string vehicleSettingName { get; set; }
         public string clientName { get; set; }
+        public string fieldId { get; set; }
     }
     public class BasicTask : BasicProps
     {
