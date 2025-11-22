@@ -8,6 +8,11 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Text.Json;
 
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Text.Json.Serialization;
+
 namespace AgOpenGPS.Classes
 {
     public class CCustomDataSender
@@ -29,7 +34,7 @@ namespace AgOpenGPS.Classes
 
 
         IMqttClient mqttClient;
-                
+
         public CCustomDataSender(FormGPS _f)
         {
             //constructor
@@ -42,7 +47,7 @@ namespace AgOpenGPS.Classes
 
             traccarUrl = Properties.Settings.Default.setTraccar_url;
             traccarClientId = Properties.Settings.Default.setTraccar_client_id;
-            InitMQTTClient();   
+            InitMQTTClient();
         }
 
         public async void InitMQTTClient()
@@ -124,7 +129,7 @@ namespace AgOpenGPS.Classes
 
         public async Task<bool> SendDataViaMQTT(string payload)
         {
-            var res =  await SendDataViaMQTTWithTopic(topic, payload);
+            var res = await SendDataViaMQTTWithTopic(topic, payload);
             return res;
         }
 
@@ -183,6 +188,8 @@ namespace AgOpenGPS.Classes
                 case MQTTCommandType.sendInputIoTProps:
                     // Handle sendInputIoTProps command
                     Debug.WriteLine("Received sendInputIoTProps command.");
+                    MqttInputIoTProps config = JsonSerializer.Deserialize<MqttInputIoTProps>(obj.value.ToString());
+                    HandleInputIotConfig(config);
                     break;
 
                 default:
@@ -191,6 +198,170 @@ namespace AgOpenGPS.Classes
             }
         }
 
+
+        public void HandleInputIotConfig(MqttInputIoTProps config)
+        {
+            // Handle the Input IoT configuration
+            // You can implement your logic here to process the configuration
+            Debug.WriteLine("Received Input IoT configuration.");
+            // Example: Update settings based on the received configuration
+            // mf.UpdateIoTSettings(config.inputIoTProps);
+            var inputIotProps = config.InputIoTProps;
+            switch(config.ProtocolType)
+            {
+                case ProtocolType.UDP:
+                    Debug.WriteLine("Protocol Type: UDP");
+                    HandleInputIotDataViaUDP(config);
+                    break;
+                case ProtocolType.HttpGet:
+                    Debug.WriteLine("Protocol Type: HTTP-GET");
+                    break;
+                case ProtocolType.HttpPost:
+                    Debug.WriteLine("Protocol Type: HTTP-POST");
+                    break;
+                default:
+                    Debug.WriteLine("Unknown Protocol Type");
+                    break;
+            }
+            //split inputIotProps to Dictionary<string, string>
+            //var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(inputIotProps.ToString());
+            //if (dict == null) return;
+            //foreach (var kvp in dict)
+            //{
+            //    Debug.WriteLine($"Key: {kvp.Key}, Value: {kvp.Value}");
+            //    // Update settings based on the received key-value pairs
+            //    // Example: mf.UpdateIoTSetting(kvp.Key, kvp.Value);
+            //}
+            ////string url = "http://192.168.55.70/number/test_number/set?value=60";
+            ////var task = SendGetRequestAsync(url, null);
+            //string msg = "{ \"test_number\":15,\"received_temperature2\":18,\"name\":\"frug234o\"}";
+            //var res = SendUdpRequestAsync("192.168.55.255", 8400, msg);
+            //var z = res.Result;
+        }
+
+        public void HandleInputIotDataViaUDP(MqttInputIoTProps config)
+        {
+            string ip = "192.168.55.255";
+            var res = SendUdpRequestAsync(ip, config.Port ?? 8400, JsonSerializer.Serialize(config.InputIoTProps));
+            var z = res.Result;
+        }
+
+
+        /// <summary>
+        /// Sends a message via UDP and waits for a response (with timeout).
+        /// </summary>
+        public static async Task<string> SendUdpRequestAsync(string ip, int port, string message, int timeoutMs = 2000)
+        {
+            using (UdpClient udpClient = new UdpClient())
+            {
+                Console.WriteLine($"Sending UDP to {ip}:{port}...");
+
+                // 1. Send
+                udpClient.Connect(ip, port);
+                byte[] sendBytes = Encoding.UTF8.GetBytes(message);
+                await udpClient.SendAsync(sendBytes, sendBytes.Length);
+
+                // 2. Receive with Timeout
+                // UDP receive blocks indefinitely, so we use Task.WhenAny to implement a timeout.
+                Console.WriteLine("Waiting for response...");
+
+                var receiveTask = udpClient.ReceiveAsync();
+                var delayTask = Task.Delay(timeoutMs);
+
+                var completedTask = await Task.WhenAny(receiveTask, delayTask);
+
+                if (completedTask == receiveTask)
+                {
+                    // Success: Data received before timeout
+                    var result = await receiveTask;
+                    return Encoding.UTF8.GetString(result.Buffer);
+                }
+                else
+                {
+                    // Timeout
+                    return "Timeout: No response received from server.";
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Sends a GET request using HttpWebRequest (Native .NET 4.8)
+        /// </summary>
+        public static async Task<string> SendGetRequestAsync(string url, Dictionary<string, string> parameters)
+        {
+            // 1. Build Query String
+            string queryString = BuildQueryString(parameters);
+            string finalUrl = url + queryString;
+
+            Console.WriteLine($"Requesting: {finalUrl}");
+
+            // 2. Create Request
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(finalUrl);
+            request.Method = "GET";
+
+            // 3. Get Response
+            using (HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync())
+            using (Stream stream = response.GetResponseStream())
+            using (StreamReader reader = new StreamReader(stream))
+            {
+                return await reader.ReadToEndAsync();
+            }
+        }
+
+        /// <summary>
+        /// Sends a POST request using HttpWebRequest (Native .NET 4.8)
+        /// </summary>
+        public static async Task<string> SendPostRequestAsync(string url, Dictionary<string, string> parameters)
+        {
+            Console.WriteLine($"Posting to: {url}");
+
+            // 1. Create Request
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+            request.Method = "POST";
+            request.ContentType = "application/x-www-form-urlencoded";
+
+            // 2. Prepare Data
+            // In .NET 4.8 POST, we must write the parameters as a string to the request stream manually
+            string postData = "";
+            if (parameters != null && parameters.Count > 0)
+            {
+                // We strip the leading '?' from the query string helper for the body
+                postData = BuildQueryString(parameters).TrimStart('?');
+            }
+
+            byte[] data = Encoding.UTF8.GetBytes(postData);
+            request.ContentLength = data.Length;
+
+            // 3. Write Data to Request Stream
+            using (Stream requestStream = await request.GetRequestStreamAsync())
+            {
+                await requestStream.WriteAsync(data, 0, data.Length);
+            }
+
+            // 4. Get Response
+            using (HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync())
+            using (Stream stream = response.GetResponseStream())
+            using (StreamReader reader = new StreamReader(stream))
+            {
+                return await reader.ReadToEndAsync();
+            }
+        }
+
+        /// <summary>
+        /// Helper to build "key=value&key2=value2" string
+        /// </summary>
+        private static string BuildQueryString(Dictionary<string, string> parameters)
+        {
+            if (parameters == null || parameters.Count == 0)
+                return "";
+
+            var queryParams = parameters.Select(p =>
+                $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value)}"
+            );
+
+            return "?" + string.Join("&", queryParams);
+        }
 
 
 
@@ -236,5 +407,55 @@ namespace AgOpenGPS.Classes
         public object value { get; set; }
         public string timestamp { get; set; }
         public string clientId { get; set; }
+    }
+
+    //public class InputIoTConfig
+    //{        public object inputIoTProps { get; set; }
+    //}
+
+    /// <summary>
+    /// Defines the allowed protocol types.
+    /// The JsonConverter attribute ensures these serialize as strings ("HTTP-GET") 
+    /// rather than integers (0, 1, 2).
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public enum ProtocolType
+    {
+        UDP,
+
+        [JsonPropertyName("HTTP-GET")]
+        HttpGet,
+
+        [JsonPropertyName("HTTP-POST")]
+        HttpPost
+    }
+
+    public class MqttInputIoTProps
+    {
+        /// <summary>
+        /// Maps to: { [key: string]: string | number | boolean | object | undefined }
+        /// We use Dictionary<string, object> to handle the dynamic value types.
+        /// </summary>
+        [JsonPropertyName("inputIoTProps")]
+        public Dictionary<string, object> InputIoTProps { get; set; } = new Dictionary<string, object>();
+
+        /// <summary>
+        /// Maps to: 'UDP' | 'HTTP-GET' | 'HTTP-POST'
+        /// </summary>
+        [JsonPropertyName("protocolType")]
+        public ProtocolType ProtocolType { get; set; }
+
+        /// <summary>
+        /// Maps to: lastIPNumber?: number
+        /// Nullable int (int?) handles the optional nature.
+        /// </summary>
+        [JsonPropertyName("lastIPNumber")]
+        public int? LastIPNumber { get; set; }
+
+        /// <summary>
+        /// Maps to: port?: number
+        /// </summary>
+        [JsonPropertyName("port")]
+        public int? Port { get; set; }
     }
 }
