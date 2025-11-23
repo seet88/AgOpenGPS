@@ -8,6 +8,8 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Security.Cryptography;
 using System.Text;
+using AgOpenGPS.Classes;
+using ProtocolType = System.Net.Sockets.ProtocolType;
 
 namespace AgOpenGPS
 {
@@ -313,38 +315,106 @@ namespace AgOpenGPS
 
         }
 
+        bool TryGetPropertyIgnoreCase(JsonElement element, string name, out JsonElement value)
+        {
+            foreach (var prop in element.EnumerateObject())
+            {
+                if (string.Equals(prop.Name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    value = prop.Value;
+                    return true;
+                }
+            }
+            value = default;
+            return false;
+        }
+
+      
+        private void SendCustomIotReceivedData(Object incomingMsg)
+        {
+            string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.customIoTData, value = incomingMsg, timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
+
+            this.customDataSender.SendDataViaMQTT(message);
+        }
+
         private void ReceiveCustomData(byte[] data)
         {
-            Debug.WriteLine("receive some data");
-            Debug.WriteLine(data.ToString());
-            var str = System.Text.Encoding.Default.GetString(data);
-            Debug.WriteLine(str);
+            // 1. Use UTF8. Default encoding can cause issues on different OS languages.
+            var str = Encoding.UTF8.GetString(data);
+            Debug.WriteLine($"Raw JSON: {str}");
 
-            ActionC action = JsonSerializer.Deserialize<ActionC>(str);
-            Debug.WriteLine(action.type);
-            //this.FileOpenField("Resume");
-            switch (action.type)
+            try
             {
-                case "resumeField":
-                    this.resumeFieldAction(action.fieldName);
-                    break;
-                case "changeSteerDirection":
+                // 2. Parse the JSON string into a generic document to inspect it
+                using (JsonDocument doc = JsonDocument.Parse(str))
+                {
+                    JsonElement root = doc.RootElement;
 
-                    this.vehicle.isInFreeDriveMode = true;
-                    if (action.directionToSteer == "right")
+                    // 3. Check if key "PGN" exists
+                    if (TryGetPropertyIgnoreCase(root, "pgn", out JsonElement pgnValue))
                     {
-                        this.HigherSteerAngleInFreeDrive();
+                        Debug.WriteLine("--- PGN Found, Looping through keys ---");
+
+                        // 4. Loop over every key and value
+                        foreach (JsonProperty property in root.EnumerateObject())
+                        {
+                            string key = property.Name;
+                            string value = property.Value.ToString(); // Or property.Value.GetRawText()
+
+                            Debug.WriteLine($"Key: {key} | Value: {value}");
+
+                            // You can add logic here if needed, e.g.:
+                            // if (key == "SomeOtherKey") { ... }
+                        }
+                        var obj = JsonSerializer.Deserialize<Object>(root.GetRawText());
+                        SendCustomIotReceivedData(obj);
                     }
-                    else if (action.directionToSteer == "left")
+                    else
                     {
-                        this.LowerSteerAngleInFreeDrive();
+                        // 5. "PGN" was NOT found, proceed with your original logic
+                        ProcessActionC(str);
                     }
-                    //this.LowerSteerAngleInFreeDrive();
-                    //mf.vehicle.driveFreeSteerAngle--;
-                    //if (mf.vehicle.driveFreeSteerAngle < -40) mf.vehicle.driveFreeSteerAngle = -40;
-                    break;
+                }
             }
+            catch (JsonException e)
+            {
+                Debug.WriteLine($"JSON Parsing Error: {e.Message}");
+            }
+        }
 
+        // Refactored your original logic into a helper method for cleanliness
+        private void ProcessActionC(string jsonString)
+        {
+            try
+            {
+                ActionC action = JsonSerializer.Deserialize<ActionC>(jsonString);
+
+                if (action == null) return;
+
+                Debug.WriteLine($"Processing Action Type: {action.type}");
+
+                switch (action.type)
+                {
+                    case "resumeField":
+                        this.resumeFieldAction(action.fieldName);
+                        break;
+                    case "changeSteerDirection":
+                        this.vehicle.isInFreeDriveMode = true;
+                        if (action.directionToSteer == "right")
+                        {
+                            this.HigherSteerAngleInFreeDrive();
+                        }
+                        else if (action.directionToSteer == "left")
+                        {
+                            this.LowerSteerAngleInFreeDrive();
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error processing ActionC: {ex.Message}");
+            }
         }
 
         //start the UDP server

@@ -390,7 +390,8 @@ namespace AgOpenGPS.Classes
         boundary,
         hello,
         taskMetadata,
-        mainTablesVFT
+        mainTablesVFT,
+        customIoTData,
     }
 
     public class MqttReceiveMessage
