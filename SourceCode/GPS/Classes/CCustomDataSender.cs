@@ -208,7 +208,7 @@ namespace AgOpenGPS.Classes
             // Example: Update settings based on the received configuration
             // mf.UpdateIoTSettings(config.inputIoTProps);
             var inputIotProps = config.InputIoTProps;
-            switch(config.ProtocolType)
+            switch (config.ProtocolType)
             {
                 case ProtocolType.UDP:
                     Debug.WriteLine("Protocol Type: UDP");
@@ -243,7 +243,14 @@ namespace AgOpenGPS.Classes
         public void HandleInputIotDataViaUDP(MqttInputIoTProps config)
         {
             string ip = "192.168.55.255";
-            var res = SendUdpRequestAsync(ip, config.Port ?? 8400, JsonSerializer.Serialize(config.InputIoTProps));
+            Dictionary<string, object> convertedData = config.InputIoTProps;
+
+            ToolProtocolConfigBase inputConfig = mf?.toolCustom?.config?.Input;
+            if (inputConfig != null)
+            {
+                convertedData = KeyMapper.ConvertKeys(inputConfig, config.InputIoTProps, false);
+            }
+            var res = SendUdpRequestAsync(ip, config.Port ?? 8401, JsonSerializer.Serialize(convertedData));
             var z = res.Result;
         }
 
@@ -469,7 +476,7 @@ namespace AgOpenGPS.Classes
         /// </summary>
         /// <param name="config">The configuration object (UDP or HTTP).</param>
         /// <returns>A dictionary where Key=IotKey and Value=SmsKey.</returns>
-        private static Dictionary<string, string> GetKeyMapping(ToolProtocolConfigBase config)
+        private static Dictionary<string, string> GetKeyMapping(ToolProtocolConfigBase config, bool isOutput = true)
         {
             IEnumerable<ToolConfigMapValueBase> configMap = null;
 
@@ -491,26 +498,55 @@ namespace AgOpenGPS.Classes
             // Using ToDictionary with StringComparer for case-insensitive lookup
             try
             {
-                return configMap
-                    .Where(item => !string.IsNullOrEmpty(item.IotKey) && !string.IsNullOrEmpty(item.SmsKey))
+                if (isOutput)
+                {
+
+                    return configMap
+                        .Where(item => !string.IsNullOrEmpty(item.IotKey) && !string.IsNullOrEmpty(item.SmsKey))
+                        .ToDictionary(
+                            item => item.IotKey,
+                            item => item.SmsKey,
+                            StringComparer.OrdinalIgnoreCase
+                        );
+                }
+                else
+                {
+                    return configMap
+                    .Where(item => !string.IsNullOrEmpty(item.SmsKey) && !string.IsNullOrEmpty(item.IotKey))
                     .ToDictionary(
-                        item => item.IotKey,
                         item => item.SmsKey,
+                        item => item.IotKey,
                         StringComparer.OrdinalIgnoreCase
                     );
+                }
             }
             catch (ArgumentException ex)
             {
                 Console.WriteLine($"Error creating key map: Duplicate 'iotKey' found in configMap. Details: {ex.Message}");
                 // Handle the error gracefully by grouping and taking the first mapping for duplicates
-                return configMap
-                    .Where(item => !string.IsNullOrEmpty(item.IotKey) && !string.IsNullOrEmpty(item.SmsKey))
-                    .GroupBy(item => item.IotKey, StringComparer.OrdinalIgnoreCase)
-                    .ToDictionary(
-                        g => g.Key,
-                        g => g.First().SmsKey,
-                        StringComparer.OrdinalIgnoreCase
-                    );
+                if (isOutput)
+                {
+                    return configMap
+                        .Where(item => !string.IsNullOrEmpty(item.IotKey) && !string.IsNullOrEmpty(item.SmsKey))
+                        .GroupBy(item => item.IotKey, StringComparer.OrdinalIgnoreCase)
+                        .ToDictionary(
+                            g => g.Key,
+                            g => g.First().SmsKey,
+                            StringComparer.OrdinalIgnoreCase
+                        );
+                }
+                else
+                {
+                    return configMap
+                        .Where(item => !string.IsNullOrEmpty(item.SmsKey) && !string.IsNullOrEmpty(item.IotKey))
+                        .GroupBy(item => item.SmsKey, StringComparer.OrdinalIgnoreCase)
+                        .ToDictionary(
+                            g => g.Key,
+                            g => g.First().IotKey,
+                            StringComparer.OrdinalIgnoreCase
+                        );
+
+                }
             }
         }
 
@@ -524,7 +560,9 @@ namespace AgOpenGPS.Classes
         /// <returns>A new dictionary with keys converted to smsKeys where applicable.</returns>
         public static Dictionary<string, object> ConvertKeys(
             ToolProtocolConfigBase config,
-            Dictionary<string, object> dynamicData)
+            Dictionary<string, object> dynamicData,
+            bool isOutput = true
+        )
         {
             if (config == null || dynamicData == null)
             {
@@ -532,7 +570,7 @@ namespace AgOpenGPS.Classes
             }
 
             // 1. Get the mapping table (IotKey -> SmsKey)
-            var keyMap = GetKeyMapping(config);
+            var keyMap = GetKeyMapping(config, isOutput);
 
             // 2. Create the new dictionary to hold the transformed data
             var transformedData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
