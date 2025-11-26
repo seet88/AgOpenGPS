@@ -12,6 +12,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json.Serialization;
+using AgOpenGPS.Forms.Field;
 
 namespace AgOpenGPS.Classes
 {
@@ -458,5 +459,120 @@ namespace AgOpenGPS.Classes
         /// </summary>
         [JsonPropertyName("port")]
         public int? Port { get; set; }
+    }
+
+
+    public static class KeyMapper
+    {
+        /// <summary>
+        /// Creates a dictionary mapping IotKeys to SmsKeys from a configuration's configMap.
+        /// </summary>
+        /// <param name="config">The configuration object (UDP or HTTP).</param>
+        /// <returns>A dictionary where Key=IotKey and Value=SmsKey.</returns>
+        private static Dictionary<string, string> GetKeyMapping(ToolProtocolConfigBase config)
+        {
+            IEnumerable<ToolConfigMapValueBase> configMap = null;
+
+            if (config is ToolConfigHTTP httpConfig)
+            {
+                configMap = httpConfig.ConfigMap;
+            }
+            else if (config is ToolConfigUDP udpConfig)
+            {
+                configMap = udpConfig.ConfigMap;
+            }
+            else
+            {
+                // Return empty dictionary if config is null or an unexpected type
+                return new Dictionary<string, string>();
+            }
+
+            // Create the lookup dictionary (IotKey -> SmsKey)
+            // Using ToDictionary with StringComparer for case-insensitive lookup
+            try
+            {
+                return configMap
+                    .Where(item => !string.IsNullOrEmpty(item.IotKey) && !string.IsNullOrEmpty(item.SmsKey))
+                    .ToDictionary(
+                        item => item.IotKey,
+                        item => item.SmsKey,
+                        StringComparer.OrdinalIgnoreCase
+                    );
+            }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"Error creating key map: Duplicate 'iotKey' found in configMap. Details: {ex.Message}");
+                // Handle the error gracefully by grouping and taking the first mapping for duplicates
+                return configMap
+                    .Where(item => !string.IsNullOrEmpty(item.IotKey) && !string.IsNullOrEmpty(item.SmsKey))
+                    .GroupBy(item => item.IotKey, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.First().SmsKey,
+                        StringComparer.OrdinalIgnoreCase
+                    );
+            }
+        }
+
+
+        /// <summary>
+        /// Converts the keys in a dynamic data object from iotKey to the mapped smsKey 
+        /// based on the provided configuration, handling key collisions.
+        /// </summary>
+        /// <param name="config">The protocol configuration (Input or Output) containing the configMap.</param>
+        /// <param name="dynamicData">A dictionary representing the dynamic incoming data.</param>
+        /// <returns>A new dictionary with keys converted to smsKeys where applicable.</returns>
+        public static Dictionary<string, object> ConvertKeys(
+            ToolProtocolConfigBase config,
+            Dictionary<string, object> dynamicData)
+        {
+            if (config == null || dynamicData == null)
+            {
+                return dynamicData ?? new Dictionary<string, object>();
+            }
+
+            // 1. Get the mapping table (IotKey -> SmsKey)
+            var keyMap = GetKeyMapping(config);
+
+            // 2. Create the new dictionary to hold the transformed data
+            var transformedData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+
+            // 3. Iterate through the keys in the incoming dynamic data
+            foreach (var kvp in dynamicData)
+            {
+                string originalKey = kvp.Key;
+                object value = kvp.Value;
+
+                // Try to find a mapped smsKey
+                if (keyMap.TryGetValue(originalKey, out string smsKey))
+                {
+                    // Case 1: Key is mapped (iotKey -> smsKey)
+                    // Use the mapped smsKey as the new key.
+                    // Using indexer assignment ([key] = value) which overwrites if it somehow exists, 
+                    // avoiding the ArgumentException that Add() would throw.
+                    transformedData[smsKey] = value;
+                    Console.WriteLine($"Key '{originalKey}' successfully mapped to '{smsKey}'.");
+                }
+                else
+                {
+                    // Case 2: Key is NOT mapped (Unmapped key)
+                    // Check if this unmapped key conflicts with an already mapped smsKey.
+                    if (!transformedData.ContainsKey(originalKey))
+                    {
+                        // No conflict, keep the original key
+                        transformedData.Add(originalKey, value);
+                    }
+                    else
+                    {
+                        // Collision detected! The unmapped key (e.g., 'T1') is identical 
+                        // to a key that was just added (e.g., 'current_temp' mapped to 'T1').
+                        // We prioritize the mapped key and ignore the unmapped key to prevent the ArgumentException.
+                        Console.WriteLine($"WARNING: Unmapped key '{originalKey}' ignored due to collision with a mapped key.");
+                    }
+                }
+            }
+
+            return transformedData;
+        }
     }
 }

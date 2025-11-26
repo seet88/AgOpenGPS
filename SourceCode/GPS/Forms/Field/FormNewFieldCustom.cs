@@ -13,6 +13,10 @@ using System.Windows.Forms;
 using System.Data.SQLite;
 using System.Diagnostics;
 using System.Xml.Linq;
+using System.Collections.Generic;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 
 namespace AgOpenGPS.Forms.Field
 {
@@ -284,6 +288,8 @@ namespace AgOpenGPS.Forms.Field
             if (tk == null) return;
             mf.taskGuid = tk?.guid;
             mf.toolGuid = tk?.toolId;
+            var toolCustom = this.GetToolBy(tk?.toolId);
+            mf.toolCustom = toolCustom;
             mf.vehicleGuid = tk?.vehicleId;
             mf.vehicleFileName = tk?.vehicleSettingName;
             mf.fieldGuid = tk?.fieldId;
@@ -333,7 +339,7 @@ namespace AgOpenGPS.Forms.Field
                 CreateNewTaskEntryInDB(selectedRefField);
 
                 Task.Delay(2000).ContinueWith(t => mf.customMqttMessages.SendTaskMetadata());
-                
+
 
             }
             catch (Exception ex)
@@ -497,6 +503,7 @@ namespace AgOpenGPS.Forms.Field
                     {
                         while (reader.Read())
                         {
+                            var toolConfig = JsonConvert.DeserializeObject<ToolConfig>(reader["config"]?.ToString());
                             var tool = new ToolCustom()
                             {
                                 id = Convert.ToInt32(reader["id"]),
@@ -505,7 +512,8 @@ namespace AgOpenGPS.Forms.Field
                                 guid = reader["guid"].ToString(),
                                 createDate = reader["create_date"].ToString(),
                                 modDate = reader["mod_date"].ToString(),
-                                settings = reader["settings"].ToString()
+                                settings = reader["settings"].ToString(),
+                                config = toolConfig
                             };
                             list.Add(tool);
                         }
@@ -519,6 +527,51 @@ namespace AgOpenGPS.Forms.Field
             }
 
             return list;
+        }
+
+        public ToolCustom GetToolBy(string guid)
+        {
+            List<ToolCustom> list = new List<ToolCustom>();
+            try
+            {
+                using (SQLiteConnection connection = new SQLiteConnection(GetDBFieldConnectionString("tasks")))
+                {
+                    connection.Open();
+                    // add guid filter
+                    string sql = $"SELECT * FROM tools where guid = @guid ;";
+                    using (SQLiteCommand command = new SQLiteCommand(sql, connection))
+                    {
+                        command.Parameters.AddWithValue("@guid", guid);
+                        using (SQLiteDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                var toolConfig = JsonConvert.DeserializeObject<ToolConfig>(reader["config"]?.ToString());
+                                var tool = new ToolCustom()
+                                {
+                                    id = Convert.ToInt32(reader["id"]),
+                                    name = reader["name"].ToString(),
+                                    description = reader["description"].ToString(),
+                                    guid = reader["guid"].ToString(),
+                                    createDate = reader["create_date"].ToString(),
+                                    modDate = reader["mod_date"].ToString(),
+                                    settings = reader["settings"].ToString(),
+                                    config = toolConfig
+                                };
+                                return tool;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Error: " + ex.Message);
+                return null;
+            }
+
+            return null;
+
         }
 
         private void SetTaskName()
@@ -1019,5 +1072,158 @@ namespace AgOpenGPS.Forms.Field
     public class ToolCustom : BasicProps
     {
         public string settings { get; set; }
+        [JsonProperty("config")]
+        public ToolConfig config { get; set; }
+
+    }
+
+    // 2. Tool Config Container
+    public class ToolConfig
+    {
+        // We use a custom converter here to decide if this is UDP or HTTP
+        [JsonProperty("input")]
+        [JsonConverter(typeof(ToolProtocolConfigConverter))]
+        public ToolProtocolConfigBase Input { get; set; }
+
+        [JsonProperty("output")]
+        [JsonConverter(typeof(ToolProtocolConfigConverter))]
+        public ToolProtocolConfigBase Output { get; set; }
+    }
+
+    // 3. The Base Class (Abstract)
+    public abstract class ToolProtocolConfigBase
+    {
+        [JsonProperty("protocolType")]
+        [JsonConverter(typeof(StringEnumConverter))]
+        public abstract ProtocolType ProtocolType { get; }
+    }
+
+    // 4. UDP Config
+    public class ToolConfigUDP : ToolProtocolConfigBase
+    {
+        // Force the enum to UDP
+        public override ProtocolType ProtocolType => ProtocolType.UDP;
+
+        [JsonProperty("port")]
+        public int Port { get; set; }
+
+        [JsonProperty("configMap")]
+        public List<ToolConfigMapValueBase> ConfigMap { get; set; } = new List<ToolConfigMapValueBase>();
+    }
+
+    // 5. HTTP Config
+    public class ToolConfigHTTP : ToolProtocolConfigBase
+    {
+        // Force the enum to HTTP
+        public override ProtocolType ProtocolType => ProtocolType.HTTP;
+
+        [JsonProperty("endIPAddress")]
+        public string EndIPAddress { get; set; }
+
+        [JsonProperty("endpoint")]
+        public string Endpoint { get; set; }
+
+        [JsonProperty("configMap")]
+        public List<ToolConfigMapValueHTTP> ConfigMap { get; set; } = new List<ToolConfigMapValueHTTP>();
+    }
+
+    // 6. Map Value Base
+    public class ToolConfigMapValueBase
+    {
+        [JsonProperty("iotKey")]
+        public string IotKey { get; set; }
+
+        // 'object' allows string, number, bool, or nested objects
+        [JsonProperty("value")]
+        public object Value { get; set; }
+
+        [JsonProperty("smsKey")]
+        public string SmsKey { get; set; }
+
+        [JsonProperty("alias")]
+        public string Alias { get; set; }
+    }
+
+    // 7. HTTP Map Value (Inherits from Base)
+    public class ToolConfigMapValueHTTP : ToolConfigMapValueBase
+    {
+        [JsonProperty("endpoint")]
+        public string Endpoint { get; set; }
+
+        [JsonProperty("method")]
+        [JsonConverter(typeof(StringEnumConverter))]
+        public HttpMethodType? Method { get; set; }
+
+        [JsonProperty("software")]
+        [JsonConverter(typeof(StringEnumConverter))]
+        public SoftwareType? Software { get; set; }
+
+        [JsonProperty("template")]
+        public string Template { get; set; }
+    }
+
+    // --- Enums ---
+    public enum ProtocolType
+    {
+        UDP,
+        HTTP
+    }
+
+    public enum HttpMethodType
+    {
+        GET,
+        POST
+    }
+
+    public enum SoftwareType
+    {
+        ESPHOME,
+        CUSTOM
+    }
+
+    public class ToolProtocolConfigConverter : JsonConverter
+    {
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof(ToolProtocolConfigBase);
+        }
+
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            if (reader.TokenType == JsonToken.Null) return null;
+
+            // Load JObject from stream
+            JObject jsonObject = JObject.Load(reader);
+
+            // Inspect the "protocolType" property
+            var protocolToken = jsonObject["protocolType"];
+            if (protocolToken == null) return null;
+
+            string protocol = protocolToken.Value<string>();
+
+            ToolProtocolConfigBase result;
+
+            if (string.Equals(protocol, "UDP", StringComparison.OrdinalIgnoreCase))
+            {
+                result = new ToolConfigUDP();
+            }
+            else if (string.Equals(protocol, "HTTP", StringComparison.OrdinalIgnoreCase))
+            {
+                result = new ToolConfigHTTP();
+            }
+            else
+            {
+                // Fallback or throw error
+                return null;
+            }
+
+            serializer.Populate(jsonObject.CreateReader(), result);
+            return result;
+        }
+
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            serializer.Serialize(writer, value);
+        }
     }
 }

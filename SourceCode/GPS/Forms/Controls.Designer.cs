@@ -26,6 +26,7 @@ namespace AgOpenGPS
         public string toolGuid = "";
         public string clientId = "Fend716-test-1";
         public string taskGuid = "";
+        public ToolCustom toolCustom = null;
         #region Right Menu
         public bool isABCyled = false;
         private void btnContour_Click(object sender, EventArgs e)

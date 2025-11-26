@@ -10,6 +10,7 @@ using System.Security.Cryptography;
 using System.Text;
 using AgOpenGPS.Classes;
 using ProtocolType = System.Net.Sockets.ProtocolType;
+using System.Collections.Generic;
 
 namespace AgOpenGPS
 {
@@ -329,7 +330,7 @@ namespace AgOpenGPS
             return false;
         }
 
-      
+
         private void SendCustomIotReceivedData(Object incomingMsg)
         {
             string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.customIoTData, value = incomingMsg, timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
@@ -366,8 +367,13 @@ namespace AgOpenGPS
                             // You can add logic here if needed, e.g.:
                             // if (key == "SomeOtherKey") { ... }
                         }
-                        var obj = JsonSerializer.Deserialize<Object>(root.GetRawText());
-                        SendCustomIotReceivedData(obj);
+                        //var obj = JsonSerializer.Deserialize<Object>(root.GetRawText());
+                        var propsKeysDict = JsonSerializer.Deserialize<Dictionary<string, object>>(root.GetRawText());
+                        if (this.toolCustom?.config?.Output != null)
+                        {
+                            propsKeysDict = KeyMapper.ConvertKeys(this.toolCustom.config.Output, propsKeysDict);
+                        }
+                        SendCustomIotReceivedData(propsKeysDict);
                     }
                     else
                     {
