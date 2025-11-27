@@ -331,7 +331,7 @@ namespace AgOpenGPS
         }
 
 
-        private void SendCustomIotReceivedData(Object incomingMsg)
+        public void SendCustomIotReceivedData(Object incomingMsg)
         {
             string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.customIoTData, value = incomingMsg, timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
 

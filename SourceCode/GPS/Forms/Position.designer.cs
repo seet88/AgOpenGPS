@@ -1547,6 +1547,7 @@ namespace AgOpenGPS
 
                 //this.customDataSender.SendDataViaMQTT(msg);
                 this.customMqttMessages.SendSectionsMessage();
+                this.formNewFieldCustom.SendDataFromAogToIot();
 
                 lastMsgSendTime = DateTime.Now;
             }

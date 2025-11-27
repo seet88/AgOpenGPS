@@ -242,7 +242,6 @@ namespace AgOpenGPS.Classes
 
         public void HandleInputIotDataViaUDP(MqttInputIoTProps config)
         {
-            string ip = "192.168.55.255";
             Dictionary<string, object> convertedData = config.InputIoTProps;
 
             ToolProtocolConfigBase inputConfig = mf?.toolCustom?.config?.Input;
@@ -250,8 +249,19 @@ namespace AgOpenGPS.Classes
             {
                 convertedData = KeyMapper.ConvertKeys(inputConfig, config.InputIoTProps, false);
             }
-            var res = SendUdpRequestAsync(ip, config.Port ?? 8401, JsonSerializer.Serialize(convertedData));
-            var z = res.Result;
+            SendInputIoTDataViaUDP(convertedData, config.Port);
+        }
+
+        public async Task SendInputIoTDataViaUDP(Dictionary<string, object> props, int? port = 8400)
+        {
+
+            string ip = "192.168.55.255";
+            //run it async
+            Task.Run(async () =>
+            {
+                var res = await SendUdpRequestAsync(ip, port ?? 8401, JsonSerializer.Serialize(props));
+                var z = "" ;
+            });
         }
 
 
@@ -512,7 +522,7 @@ namespace AgOpenGPS.Classes
                 else
                 {
                     return configMap
-                    .Where(item => !string.IsNullOrEmpty(item.SmsKey) && !string.IsNullOrEmpty(item.IotKey))
+                    .Where(item => !string.IsNullOrEmpty(item.SmsKey) && !string.IsNullOrEmpty(item.IotKey) && item.Source==SourceType.SERVER)
                     .ToDictionary(
                         item => item.SmsKey,
                         item => item.IotKey,

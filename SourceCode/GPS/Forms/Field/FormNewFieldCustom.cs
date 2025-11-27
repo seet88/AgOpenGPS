@@ -1013,6 +1013,41 @@ namespace AgOpenGPS.Forms.Field
             };
         }
 
+        //send data from AOG to IoT device based on tool config like actual speed
+        public void SendDataFromAogToIot()
+        {
+            var inputConfig = this.mf?.toolCustom?.config;
+            if (inputConfig == null) return;
+            if (inputConfig.Input == null) return;
+            if (inputConfig.Input.ProtocolType == ProtocolType.UDP)
+            {
+                var configMap = (inputConfig.Input as ToolConfigUDP)?.ConfigMap?.Where(i => i.Source == SourceType.AOGAPP);
+                if (configMap == null) return;
+                var dataDict = CreateAogAppDataDictionary(configMap);
+                if(dataDict.Count > 0)
+                //this.mf.SendCustomIotReceivedData(dataDict);
+                this.mf.customDataSender.SendInputIoTDataViaUDP(dataDict);
+            }
+        }
+
+        //create dictionary base on config map, source typ AOGAPP
+        public Dictionary<string, object> CreateAogAppDataDictionary(IEnumerable<ToolConfigMapValueBase> configMap)
+        {
+            Dictionary<string, object> dataDict = new Dictionary<string, object>();
+          
+                if (configMap == null) return dataDict;
+
+                foreach (var item in configMap)
+                {
+                    //example only speed for now
+                    if (item.ValueSource == ValueSource.SPEED)
+                    {
+                        dataDict[item.IotKey] = Math.Round(this.mf.pn.speed, 2); 
+                    }
+                }
+            return dataDict;
+        }
+
 
     }
 
@@ -1142,6 +1177,14 @@ namespace AgOpenGPS.Forms.Field
 
         [JsonProperty("alias")]
         public string Alias { get; set; }
+
+        [JsonProperty("source")]
+        [JsonConverter(typeof(StringEnumConverter))]
+        public SourceType? Source { get; set; }
+
+        [JsonProperty("valueSource")]
+        [JsonConverter(typeof(StringEnumConverter))]
+        public ValueSource? ValueSource { get; set; }
     }
 
     // 7. HTTP Map Value (Inherits from Base)
@@ -1179,6 +1222,18 @@ namespace AgOpenGPS.Forms.Field
     {
         ESPHOME,
         CUSTOM
+    }
+
+    public enum SourceType
+    {
+        SERVER,
+        AOGAPP,
+        STATIC
+    }
+
+    public enum ValueSource
+    {
+        SPEED
     }
 
     public class ToolProtocolConfigConverter : JsonConverter
