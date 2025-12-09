@@ -115,7 +115,8 @@ namespace AgOpenGPS.Classes
         public object GetTaskData(FormGPS mf)
         {
             var boundaryObjD = GetLocalBoundry(mf);
-            var type = boundaryObjD.GetType();
+            var type = boundaryObjD?.GetType();
+            if (type == null) return null;
             var prop = type.GetProperty("boundary");
             var boundary = prop.GetValue(boundaryObjD);
 
@@ -124,7 +125,7 @@ namespace AgOpenGPS.Classes
                 localCordsToGPSStatics = GetLocalGPSStaticValues(mf),
                 boundary = boundary,
                 taskMetadata = GetTaskMetadata(mf),
-                referenceNavigationLines = GetReferenceNavigationLines(mf),
+                //referenceNavigationLines = GetReferenceNavigationLines(mf),
             };
 
             return obj;
@@ -145,6 +146,7 @@ namespace AgOpenGPS.Classes
                         mft.s.isSectionOn,
                         mft.s.isMappingOn,
                         mft.s.sectionBtnState,
+                        speed = mf.SpeedKPH,
                         sectionNumber = mft.idx + 1,
                         position = new
                         {

@@ -1533,7 +1533,7 @@ namespace AgOpenGPS
             };
 
             //string message = JsonSerializer.Serialize(new { msgType = "sectionsInfo", value = obj });
-            string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.sectionsInfo, value = obj, timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
+            string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.sectionsInfo, value = obj, timestamp = this.formNewFieldCustom.GetDateTime("yyyy-MM-dd HH:mm:ss") });
 
             return message;
         }
@@ -1547,15 +1547,15 @@ namespace AgOpenGPS
 
                 //this.customDataSender.SendDataViaMQTT(msg);
                 this.customMqttMessages.SendSectionsMessage();
-                this.formNewFieldCustom.SendDataFromAogToIot();
 
                 lastMsgSendTime = DateTime.Now;
             }
-            if(DateTime.Now - lastMsgLocalGPSStaticsSendTime > TimeSpan.FromSeconds(50))
-            {                
+            if(DateTime.Now - lastMsgLocalGPSStaticsSendTime > TimeSpan.FromSeconds(10))
+            {
                 //pn.SendMsgLocalGPSStaticValues();
                 //bnd.SendMsgLocalBoundaryValues();
                 //this.trk.SendMsgLocalLinesValues();
+                this.formNewFieldCustom.SendDataFromAogToIot();
                 lastMsgLocalGPSStaticsSendTime = DateTime.Now;
                 //this.customMqttMessages.SendTaskMetadata();
 

@@ -216,7 +216,7 @@ namespace AgOpenGPS
                     }),
                 };
                 //string message = JsonSerializer.Serialize(new { msgType = "boundary", value = obj });
-                string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.boundary, value = obj, timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
+                string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.boundary, value = obj, timestamp = mf.formNewFieldCustom.GetDateTime("yyyy-MM-dd HH:mm:ss") });
                 var z = message.Length;
                 return message;
             }

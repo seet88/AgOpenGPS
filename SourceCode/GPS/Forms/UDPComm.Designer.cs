@@ -35,7 +35,7 @@ namespace AgOpenGPS
 
         // Data stream
         private byte[] loopBuffer = new byte[1024];
-        private byte[] loopBufferCustom = new byte[1024];
+        private byte[] loopBufferCustom = new byte[8024];
         public Process pythonWebViewProcess = null;
         public int pythonWebViewProcessId = 0;
 
@@ -333,9 +333,10 @@ namespace AgOpenGPS
 
         public void SendCustomIotReceivedData(Object incomingMsg)
         {
-            string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.customIoTData, value = incomingMsg, timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
+            string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.customIoTData, value = incomingMsg, timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), clientId = this.clientId });
 
-            this.customDataSender.SendDataViaMQTT(message);
+            var z = this.customDataSender.SendDataViaMQTT(message);
+            Debug.WriteLine($"Sent Custom IoT Data via MQTT: {z}");
         }
 
         private void ReceiveCustomData(byte[] data)
@@ -443,7 +444,7 @@ namespace AgOpenGPS
 
         public void StartLoopbackServerCustom()
         {
-            int port = 8895;
+            int port = 8889;
             try
             {
                 // Initialise the socket

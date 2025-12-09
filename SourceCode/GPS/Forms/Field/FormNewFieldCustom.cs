@@ -98,12 +98,12 @@ namespace AgOpenGPS.Forms.Field
 
         private void btnAddDate_Click(object sender, EventArgs e)
         {
-            tboxFieldName.Text += " " + DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            tboxFieldName.Text += " " + GetDateTime("yyyy-MM-dd");
         }
 
         private void btnAddTime_Click(object sender, EventArgs e)
         {
-            tboxFieldName.Text += " " + DateTime.Now.ToString("HH-mm", CultureInfo.InvariantCulture);
+            tboxFieldName.Text += " " + GetDateTime("HH-mm");
         }
 
         private void CreateNewTaskEntryInDB(RefField rf)
@@ -135,7 +135,7 @@ namespace AgOpenGPS.Forms.Field
                     command.Parameters.AddWithValue("@headland", rf.headland);
                     command.Parameters.AddWithValue("@backPic", rf.backPic);
                     command.Parameters.AddWithValue("@rateMap", rf.rateMap);
-                    command.Parameters.AddWithValue("@createDate", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
+                    command.Parameters.AddWithValue("@createDate", GetDateTime("yyyy-MM-dd HH:mm:ss"));
                     //command.Parameters.AddWithValue("@modDate", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
                     command.Parameters.AddWithValue("@description", rf.description);
                     command.Parameters.AddWithValue("@area", rf.area);
@@ -190,7 +190,7 @@ namespace AgOpenGPS.Forms.Field
                     command.Parameters.AddWithValue("@headland", rf.headland);
                     command.Parameters.AddWithValue("@backPic", rf.backPic);
                     command.Parameters.AddWithValue("@rateMap", rf.rateMap);
-                    command.Parameters.AddWithValue("@modDate", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
+                    command.Parameters.AddWithValue("@modDate", GetDateTime("yyyy-MM-dd HH:mm:ss"));
                     command.Parameters.AddWithValue("@areaRemain", Math.Round(rf.areaRemain, 2));
                     command.Parameters.AddWithValue("@areaDone", Math.Round(rf.areaDone, 2));
                     //command.Parameters.AddWithValue("@toolId", mf.toolGuid);
@@ -337,6 +337,8 @@ namespace AgOpenGPS.Forms.Field
                 CreateTaskFiles(selectedRefField, dirNewField);
                 mf.FileOpenField(dirNewField + "\\Field.txt");
                 CreateNewTaskEntryInDB(selectedRefField);
+
+                SetMainFormProps();
 
                 Task.Delay(2000).ContinueWith(t => mf.customMqttMessages.SendTaskMetadata());
 
@@ -574,10 +576,15 @@ namespace AgOpenGPS.Forms.Field
 
         }
 
+        public string GetDateTime(String format= "yyyy-MM-dd")
+        {
+            return DateTime.Now.AddMonths(-4).ToString(format, CultureInfo.InvariantCulture);
+            return DateTime.Now.ToString(format, CultureInfo.InvariantCulture);
+        }
         private void SetTaskName()
         {
-            var time = DateTime.Now.ToString("HH-mm", CultureInfo.InvariantCulture);
-            var date = DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var time = GetDateTime("HH-mm");
+            var date = GetDateTime("yyyy-MM-dd");
             var fieldName = listOfRefFieldsCmb.SelectedItem as RefField;
 
             tboxFieldName.Text = $"{fieldName?.name}_{date}_{time}_{taskNameTxt.Text}";
@@ -882,7 +889,7 @@ namespace AgOpenGPS.Forms.Field
                     command.Parameters.AddWithValue("@headland", rf.headland);
                     command.Parameters.AddWithValue("@backPic", rf.backPic);
                     command.Parameters.AddWithValue("@rateMap", rf.rateMap);
-                    command.Parameters.AddWithValue("@createDate", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
+                    command.Parameters.AddWithValue("@createDate", GetDateTime("yyyy-MM-dd HH:mm:ss"));
                     //command.Parameters.AddWithValue("@modDate", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
                     command.Parameters.AddWithValue("@description", rf.description);
                     command.Parameters.AddWithValue("@area", rf.area);
@@ -959,7 +966,7 @@ namespace AgOpenGPS.Forms.Field
                             headland = rf.headland,
                             backPic = rf.backPic,
                             rateMap = rf.rateMap,
-                            createDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+                            createDate = GetDateTime("yyyy-MM-dd HH:mm:ss"),
                             area = area,
                             lat = point.Item1,
                             lon = point.Item2,

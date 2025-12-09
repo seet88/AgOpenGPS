@@ -108,7 +108,7 @@ namespace AgOpenGPS
                 latStart = latStart,
             };
 
-            string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.localCordsToGPSStatics, value = obj, timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
+            string message = JsonSerializer.Serialize(new MqttMessage() { msgType = MQTTMessageType.localCordsToGPSStatics, value = obj, timestamp = mf.formNewFieldCustom.GetDateTime("yyyy-MM-dd HH:mm:ss") });
 
 
             return message;

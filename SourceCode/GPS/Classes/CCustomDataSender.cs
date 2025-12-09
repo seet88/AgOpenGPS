@@ -96,7 +96,7 @@ namespace AgOpenGPS.Classes
 
             // Subscribe to a topic
             await mqttClient.SubscribeAsync(subTopic);
-            Console.WriteLine("Subscribed to topic 'test/topic'. Waiting for messages...");
+            Console.WriteLine($"Subscribed to topic {subTopic}. Waiting for messages...");
             mqttClient.ApplicationMessageReceivedAsync += e =>
             {
                 var payloadBytes = e.ApplicationMessage.PayloadSegment.Array;
@@ -123,6 +123,12 @@ namespace AgOpenGPS.Classes
             // Keep the application running to receive messages
             Console.WriteLine("Press any key to exit.");
             Console.ReadLine();
+
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(2000);
+                this.mf.customMqttMessages.SendMainTablesVFT();
+            });
 
             // Disconnect from the broker
             //await mqttClient.DisconnectAsync();
