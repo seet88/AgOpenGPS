@@ -107,8 +107,9 @@ namespace AgOpenGPS.Forms.Field
             tboxFieldName.Text += " " + GetDateTime("HH-mm");
         }
 
-        private void CreateNewTaskEntryInDB(RefField rf)
+        private void CreateNewTaskEntryInDB(RefField rf, string taskGuid = null)
         {
+            string guid = taskGuid ?? Guid.NewGuid().ToString();
 
             using (SQLiteConnection connection = new SQLiteConnection(GetDBFieldConnectionString("tasks")))
             {
@@ -143,7 +144,7 @@ namespace AgOpenGPS.Forms.Field
                     command.Parameters.AddWithValue("@toolId", mf.toolGuid);
                     command.Parameters.AddWithValue("@vehicleId", mf.vehicleGuid);
                     command.Parameters.AddWithValue("@vehicleSettingName", mf.vehicleFileName);
-                    command.Parameters.AddWithValue("@guid", Guid.NewGuid().ToString());
+                    command.Parameters.AddWithValue("@guid", guid);
                     command.Parameters.AddWithValue("@clientName", mf.clientId);
                     command.Parameters.AddWithValue("@fieldId", rf.guid);
 
@@ -295,6 +296,7 @@ namespace AgOpenGPS.Forms.Field
             mf.vehicleFileName = tk?.vehicleSettingName;
             mf.fieldGuid = tk?.fieldId;
             //mf.clientId = tk?.clientName;
+            this.mf.customMqttMessages.SendMainTablesVFT();
             this.mf.customMqttMessages.SendTaskMetadata();
         }
 
@@ -318,7 +320,7 @@ namespace AgOpenGPS.Forms.Field
         {
 
             //show message box with yes no 
-            var result = MessageBox.Show($"Create new task: {taskProps.TaskName} ?", "", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            //var result = MessageBox.Show($"Create new task: {taskProps.TaskName} ?", "", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
             if (mf.isJobStarted) mf.FileSaveEverythingBeforeClosingField();
 
@@ -348,11 +350,15 @@ namespace AgOpenGPS.Forms.Field
                 CreateTaskFiles(selectedRefField, dirNewField);
 
                 mf.FileOpenField(dirNewField + "\\Field.txt");
-                CreateNewTaskEntryInDB(selectedRefField);
+                CreateNewTaskEntryInDB(selectedRefField, taskProps.TaskGuid);
 
                 SetMainFormProps();
 
                 Task.Delay(2000).ContinueWith(t => mf.customMqttMessages.SendTaskMetadata());
+
+                var form = new FormTimedMessage(2000, "Task created from MQTT", "Success");
+
+                form.Show(this);
             }
             catch (Exception ex)
             {
@@ -369,6 +375,8 @@ namespace AgOpenGPS.Forms.Field
 
         private void btnSave_Click(object sender, EventArgs e)
         {
+
+            Task.Delay(200).ContinueWith(t => mf.customMqttMessages.SendMainTablesVFT());
             //fill something in
             if (String.IsNullOrEmpty(tboxFieldName.Text.Trim()))
             {
@@ -1049,6 +1057,8 @@ namespace AgOpenGPS.Forms.Field
 
                 form.Show(this);
                 Close();
+
+                Task.Delay(1000).ContinueWith(t => mf.customMqttMessages.SendMainTablesVFT());
 
             }
             catch (Exception ex)

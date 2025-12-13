@@ -483,6 +483,9 @@ namespace AgOpenGPS.Classes
         [JsonPropertyName("taskName")]
         public string TaskName { get; set; }
 
+        [JsonPropertyName("taskGuid")]
+        public string TaskGuid { get; set; }
+
         [JsonPropertyName("fieldGuid")]
         public string FieldGuid { get; set; }
 
