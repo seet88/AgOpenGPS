@@ -198,6 +198,26 @@ namespace AgOpenGPS.Classes
                     MqttInputIoTProps config = JsonSerializer.Deserialize<MqttInputIoTProps>(obj.value.ToString());
                     HandleInputIotConfig(config);
                     break;
+                case MQTTCommandType.createNewTask:
+                    // Handle createNewTask command
+                    MqttInputTaskProps taskConfig = JsonSerializer.Deserialize<MqttInputTaskProps>(obj.value.ToString());
+                    Task.Run(() =>
+                    {
+                        this.mf.Invoke(new Action(() =>
+                        {
+                            using (var form2 = new FormNewFieldCustom(this.mf))
+                            { 
+                              form2.CreateTaskFromCommand(taskConfig);
+                            }
+                        }));
+                    });
+                    //this.mf.formNewFieldCustom.CreateTaskFromCommand(taskConfig);
+                    Debug.WriteLine("Received createNewTask command."+ taskConfig);
+                    break;
+                case MQTTCommandType.resumeTask:
+                    // Handle resumeTask command
+                    Debug.WriteLine("Received resumeTask command.");
+                    break;
 
                 default:
                     Debug.WriteLine("Unknown command type.");
@@ -401,6 +421,8 @@ namespace AgOpenGPS.Classes
         sendSectionsInfo,
         sendMainTablesVFT,
         sendInputIoTProps,
+        createNewTask,
+        resumeTask,
 
     }
 
@@ -453,6 +475,22 @@ namespace AgOpenGPS.Classes
 
         [JsonPropertyName("HTTP-POST")]
         HttpPost
+    }
+
+    //create class similat to MqqtInputIoTProps that have taskName, fieldGuid, vehicleGuid, toolGuid
+    public class MqttInputTaskProps
+    {
+        [JsonPropertyName("taskName")]
+        public string TaskName { get; set; }
+
+        [JsonPropertyName("fieldGuid")]
+        public string FieldGuid { get; set; }
+
+        [JsonPropertyName("vehicleGuid")]
+        public string VehicleGuid { get; set; }
+
+        [JsonPropertyName("toolGuid")]
+        public string ToolGuid { get; set; }
     }
 
     public class MqttInputIoTProps

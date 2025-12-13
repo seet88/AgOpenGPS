@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
+using AgOpenGPS.Classes;
 
 namespace AgOpenGPS.Forms.Field
 {
@@ -295,6 +296,73 @@ namespace AgOpenGPS.Forms.Field
             mf.fieldGuid = tk?.fieldId;
             //mf.clientId = tk?.clientName;
             this.mf.customMqttMessages.SendTaskMetadata();
+        }
+
+        private RefField GetRefFieldByGuid(string guid)
+        {
+            return GetListOfRefFields().FirstOrDefault(rf => rf.guid == guid);
+        }
+
+        private ToolCustom GetToolByGuid(string guid)
+        {
+            return GetListOfTools().FirstOrDefault(t => t.guid == guid);
+        }
+
+        private VehicleCustom GetVehicleByGuid(string guid)
+        {
+            return GetListOfVehicles().FirstOrDefault(v => v.guid == guid);
+        }
+
+
+        public bool CreateTaskFromCommand(MqttInputTaskProps taskProps)
+        {
+
+            //show message box with yes no 
+            var result = MessageBox.Show($"Create new task: {taskProps.TaskName} ?", "", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (mf.isJobStarted) mf.FileSaveEverythingBeforeClosingField();
+
+            mf.currentFieldDirectory = taskProps.TaskName;
+
+            //get the directory and make sure it exists, create if not
+            string dirNewField = mf.fieldsDirectory + mf.currentFieldDirectory + "\\";
+
+            //mf.menustripLanguage.Enabled = false;
+            //if no template set just make a new file.
+            try
+            {
+                var selectedRefField = GetRefFieldByGuid(taskProps.FieldGuid);
+                if (selectedRefField == null)
+                {
+                    MessageBox.Show("No selected ref field, try again", gStr.gsError, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+                var selectedTool = GetToolByGuid(taskProps.ToolGuid);
+
+                mf.toolGuid = selectedTool.guid;
+                var selectedVehicle = GetVehicleByGuid(taskProps.VehicleGuid);
+                mf.vehicleGuid = selectedVehicle.guid;
+                mf.fieldGuid = selectedRefField.guid;
+
+                CreateTaskDir(taskProps.TaskName);
+                CreateTaskFiles(selectedRefField, dirNewField);
+
+                mf.FileOpenField(dirNewField + "\\Field.txt");
+                CreateNewTaskEntryInDB(selectedRefField);
+
+                SetMainFormProps();
+
+                Task.Delay(2000).ContinueWith(t => mf.customMqttMessages.SendTaskMetadata());
+            }
+            catch (Exception ex)
+            {
+                mf.WriteErrorLog("Creating new field " + ex);
+
+                MessageBox.Show(ex.ToString(), gStr.gsError);
+                mf.currentFieldDirectory = "";
+            }
+
+            return true;
         }
 
 
@@ -576,7 +644,7 @@ namespace AgOpenGPS.Forms.Field
 
         }
 
-        public string GetDateTime(String format= "yyyy-MM-dd")
+        public string GetDateTime(String format = "yyyy-MM-dd")
         {
             return DateTime.Now.AddMonths(-4).ToString(format, CultureInfo.InvariantCulture);
             return DateTime.Now.ToString(format, CultureInfo.InvariantCulture);
@@ -1031,9 +1099,9 @@ namespace AgOpenGPS.Forms.Field
                 var configMap = (inputConfig.Input as ToolConfigUDP)?.ConfigMap?.Where(i => i.Source == SourceType.AOGAPP);
                 if (configMap == null) return;
                 var dataDict = CreateAogAppDataDictionary(configMap);
-                if(dataDict.Count > 0)
-                //this.mf.SendCustomIotReceivedData(dataDict);
-                this.mf.customDataSender.SendInputIoTDataViaUDP(dataDict);
+                if (dataDict.Count > 0)
+                    //this.mf.SendCustomIotReceivedData(dataDict);
+                    this.mf.customDataSender.SendInputIoTDataViaUDP(dataDict);
             }
         }
 
@@ -1041,17 +1109,17 @@ namespace AgOpenGPS.Forms.Field
         public Dictionary<string, object> CreateAogAppDataDictionary(IEnumerable<ToolConfigMapValueBase> configMap)
         {
             Dictionary<string, object> dataDict = new Dictionary<string, object>();
-          
-                if (configMap == null) return dataDict;
 
-                foreach (var item in configMap)
+            if (configMap == null) return dataDict;
+
+            foreach (var item in configMap)
+            {
+                //example only speed for now
+                if (item.ValueSource == ValueSource.SPEED)
                 {
-                    //example only speed for now
-                    if (item.ValueSource == ValueSource.SPEED)
-                    {
-                        dataDict[item.IotKey] = Math.Round(this.mf.pn.speed, 2); 
-                    }
+                    dataDict[item.IotKey] = Math.Round(this.mf.pn.speed, 2);
                 }
+            }
             return dataDict;
         }
 
