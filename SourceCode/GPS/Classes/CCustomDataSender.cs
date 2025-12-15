@@ -13,6 +13,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text.Json.Serialization;
 using AgOpenGPS.Forms.Field;
+using System.Security.Cryptography;
 
 namespace AgOpenGPS.Classes
 {
@@ -206,13 +207,13 @@ namespace AgOpenGPS.Classes
                         this.mf.Invoke(new Action(() =>
                         {
                             using (var form2 = new FormNewFieldCustom(this.mf))
-                            { 
-                              form2.CreateTaskFromCommand(taskConfig);
+                            {
+                                form2.CreateTaskFromCommand(taskConfig);
                             }
                         }));
                     });
                     //this.mf.formNewFieldCustom.CreateTaskFromCommand(taskConfig);
-                    Debug.WriteLine("Received createNewTask command."+ taskConfig);
+                    Debug.WriteLine("Received createNewTask command." + taskConfig);
                     break;
                 case MQTTCommandType.resumeTask:
                     // Handle resumeTask command
@@ -286,7 +287,7 @@ namespace AgOpenGPS.Classes
             Task.Run(async () =>
             {
                 var res = await SendUdpRequestAsync(ip, port ?? 8401, JsonSerializer.Serialize(props));
-                var z = "" ;
+                var z = "";
             });
         }
 
@@ -326,6 +327,56 @@ namespace AgOpenGPS.Classes
                     return "Timeout: No response received from server.";
                 }
             }
+        }
+
+        public string GetCurrentIPAddress()
+        {
+            string localIP = "";
+            try
+            {
+                var host = Dns.GetHostEntry(Dns.GetHostName());
+                foreach (var ip in host.AddressList)
+                {
+                    if (ip.AddressFamily == AddressFamily.InterNetwork)
+                    {
+                        localIP = ip.ToString();
+                        break;
+                    }
+                }
+                return localIP;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
+
+        public string GetIotIPAddress(string lastOctetOfIP)
+        {
+            string localIP = GetCurrentIPAddress();
+            if (string.IsNullOrEmpty(localIP)) return null;
+            var segments = localIP.Split('.');
+            if (segments.Length != 4) return null;
+            segments[3] = lastOctetOfIP;
+            return string.Join(".", segments);
+        }
+
+        public async Task GetIoTDataAndSendToServerAsync()
+        {
+            var config = this.mf.toolCustom?.config?.Output as ToolConfigHTTP;
+            if (config == null) return;
+            if(config?.ProtocolType.ToString()?.ToUpper() != "HTTP") return;
+            string hostIp = GetIotIPAddress(config.EndIPAddress?.ToString() ?? "39");
+
+            string url = "http://" + hostIp + config.Endpoint;
+            var response = await SendGetRequestAsync(url, null);
+            var propsKeysDict = JsonSerializer.Deserialize<Dictionary<string, object>>(response);
+
+            propsKeysDict = KeyMapper.ConvertKeys(config, propsKeysDict);
+
+            this.mf.SendCustomIotReceivedData(propsKeysDict);
+
+            return;
         }
 
 
@@ -569,7 +620,7 @@ namespace AgOpenGPS.Classes
                 else
                 {
                     return configMap
-                    .Where(item => !string.IsNullOrEmpty(item.SmsKey) && !string.IsNullOrEmpty(item.IotKey) && item.Source==SourceType.SERVER)
+                    .Where(item => !string.IsNullOrEmpty(item.SmsKey) && !string.IsNullOrEmpty(item.IotKey) && item.Source == SourceType.SERVER)
                     .ToDictionary(
                         item => item.SmsKey,
                         item => item.IotKey,

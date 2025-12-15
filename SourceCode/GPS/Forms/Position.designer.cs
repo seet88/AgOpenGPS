@@ -1162,6 +1162,7 @@ namespace AgOpenGPS
                 if (isBtnAutoSteerOn) btnAutoSteer.PerformClick();
             }
 
+            //SendMessage();
             previousSpeed = avgSpeed;
         }
 
@@ -1540,12 +1541,13 @@ namespace AgOpenGPS
 
         private void SendMessage()
         {
-            if (DateTime.Now - lastMsgSendTime > TimeSpan.FromSeconds(3))
+            if (DateTime.Now - lastMsgSendTime > TimeSpan.FromSeconds(8))
             {
                 //string msg = CreateMessageOfVehicle();
                 //this.SendCustomData(msg);
 
                 //this.customDataSender.SendDataViaMQTT(msg);
+                this.customDataSender.GetIoTDataAndSendToServerAsync();
                 this.customMqttMessages.SendSectionsMessage();
 
                 lastMsgSendTime = DateTime.Now;
@@ -1601,8 +1603,8 @@ namespace AgOpenGPS
                     patchCounter++;
                 }
             }
-
             SendMessage();
+
         }
 
         //the start of first few frames to initialize entire program
