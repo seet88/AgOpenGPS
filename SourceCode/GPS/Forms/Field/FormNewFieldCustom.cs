@@ -624,7 +624,8 @@ namespace AgOpenGPS.Forms.Field
                         {
                             while (reader.Read())
                             {
-                                var toolConfig = JsonConvert.DeserializeObject<ToolConfig>(reader["config"]?.ToString());
+                                var configJsonString = reader["config"]?.ToString();
+                                var toolConfig = JsonConvert.DeserializeObject<ToolConfig>(configJsonString);
                                 var tool = new ToolCustom()
                                 {
                                     id = Convert.ToInt32(reader["id"]),
@@ -1235,7 +1236,7 @@ namespace AgOpenGPS.Forms.Field
     public class ToolConfigHTTP : ToolProtocolConfigBase
     {
         // Force the enum to HTTP
-        public override ProtocolType ProtocolType => ProtocolType.HTTP;
+        public override ProtocolType ProtocolType => ProtocolType.HTTPGET;
 
         [JsonProperty("endIPAddress")]
         public string EndIPAddress { get; set; }
@@ -1294,7 +1295,8 @@ namespace AgOpenGPS.Forms.Field
     public enum ProtocolType
     {
         UDP,
-        HTTP
+        HTTPGET,
+        HTTPPOST
     }
 
     public enum HttpMethodType
@@ -1347,7 +1349,7 @@ namespace AgOpenGPS.Forms.Field
             {
                 result = new ToolConfigUDP();
             }
-            else if (string.Equals(protocol, "HTTP", StringComparison.OrdinalIgnoreCase))
+            else if (protocol.Contains("HTTP"))
             {
                 result = new ToolConfigHTTP();
             }

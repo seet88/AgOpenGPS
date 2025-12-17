@@ -242,6 +242,8 @@ namespace AgOpenGPS.Classes
                     HandleInputIotDataViaUDP(config);
                     break;
                 case ProtocolType.HttpGet:
+
+                    HandleInputIotDataViaHTTPGet(config);
                     Debug.WriteLine("Protocol Type: HTTP-GET");
                     break;
                 case ProtocolType.HttpPost:
@@ -279,10 +281,38 @@ namespace AgOpenGPS.Classes
             SendInputIoTDataViaUDP(convertedData, config.Port);
         }
 
+        public void HandleInputIotDataViaHTTPGet(MqttInputIoTProps config)
+        {
+            Dictionary<string, object> convertedData = config.InputIoTProps;
+
+            ToolProtocolConfigBase inputConfig = mf?.toolCustom?.config?.Input;
+            if (inputConfig != null)
+            {
+                convertedData = KeyMapper.ConvertKeys(inputConfig, config.InputIoTProps, false);
+            }
+            SendInputIoTDataViaHTTPGet(convertedData, config);
+            //SendInputIoTDataViaUDP(convertedData, config.Port);
+        }
+
+        public void SendInputIoTDataViaHTTPGet(Dictionary<string, object> props, MqttInputIoTProps conifg)
+        {
+            var ip = GetIotIPAddress(conifg.LastIPNumber?.ToString() ?? "39");
+            string url = "http://" + ip + conifg.Endpoint;
+            string queryString = BuildQueryString(props.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.ToString()??""));
+            //url += queryString;
+            //var z = url;
+            Task.Run(async () =>
+            {
+                var res = await SendGetRequestAsync(url, props.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.ToString() ?? ""));
+                var z2 = res;
+            });
+            //run it async
+
+        }
+
         public async Task SendInputIoTDataViaUDP(Dictionary<string, object> props, int? port = 8400)
         {
-
-            string ip = "192.168.55.255";
+            string ip = GetIotIPAddress("255");
             //run it async
             Task.Run(async () =>
             {
@@ -365,7 +395,7 @@ namespace AgOpenGPS.Classes
         {
             var config = this.mf.toolCustom?.config?.Output as ToolConfigHTTP;
             if (config == null) return;
-            if(config?.ProtocolType.ToString()?.ToUpper() != "HTTP") return;
+            if(config?.ProtocolType.ToString()?.ToUpper() != "HTTPGET") return;
             string hostIp = GetIotIPAddress(config.EndIPAddress?.ToString() ?? "39");
 
             string url = "http://" + hostIp + config.Endpoint;
@@ -452,7 +482,7 @@ namespace AgOpenGPS.Classes
                 return "";
 
             var queryParams = parameters.Select(p =>
-                $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value)}"
+                $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value??"")}"
             );
 
             return "?" + string.Join("&", queryParams);
@@ -521,10 +551,10 @@ namespace AgOpenGPS.Classes
     {
         UDP,
 
-        [JsonPropertyName("HTTP-GET")]
+        [JsonPropertyName("HTTPGET")]
         HttpGet,
 
-        [JsonPropertyName("HTTP-POST")]
+        [JsonPropertyName("HTTPPOST")]
         HttpPost
     }
 
@@ -574,6 +604,10 @@ namespace AgOpenGPS.Classes
         /// </summary>
         [JsonPropertyName("port")]
         public int? Port { get; set; }
+
+        //add endpoint string it can be null
+        [JsonPropertyName("endpoint")]
+        public string Endpoint { get; set; }
     }
 
 
